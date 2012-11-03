@@ -103,12 +103,13 @@ void* client_thread(void* arg)
     std::string resp_type;
     std::string resp_message;
     err = send_message(empty, empty, resp_type, resp_message, csock); 
+    printf("Returned from 1st recieve\n");
     if (err != 0) {
         return NULL;
     }
     while(1)
     {
-        if (resp_type.substr(0,4).compare("getsalt")) {
+        if (resp_type.compare("getsalt")) {
             std::string messageType("sendsalt");
             std::string random = readRand(64);
             err = send_message(messageType, random, resp_type, resp_message, csock);
