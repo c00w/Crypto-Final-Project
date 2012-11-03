@@ -50,7 +50,7 @@ void handle_input(std::string & input, int sock) {
         std::string resp_data;
         int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
 
-        printf("Recieved hash from server\n");
+        std::cout << "Recieved salt" << std::endl;
 
         if (err != 0 || resp_type.compare("sendsalt") != 0 || resp_data.length() <28) {
             return;
@@ -66,7 +66,8 @@ void handle_input(std::string & input, int sock) {
         msg_type.assign("login");
         msg_data.assign(pin_hash_buff, 64);
 
-        printf("Sent hash to server");
+        std::cout << "Sent salt to server" << std::endl;
+
         //Try and login
         err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
 
