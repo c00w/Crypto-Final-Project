@@ -17,8 +17,7 @@
 #include <string>
 #include <iostream>
 #include <stdexcept>
-
-
+#include <map>
 
 void* client_thread(void* arg);
 void* console_thread(void* arg);
@@ -42,6 +41,10 @@ STR2INT_ERROR str2int (long &i, char const *s)
     i = l;
     return SUCCESS;
 }
+
+// Create the map to contain the users
+std::map< std::string, unsigned long int > users;
+pthread_mutex_t userMutex;
 
 int main(int argc, char* argv[])
 {
@@ -107,6 +110,8 @@ void* client_thread(void* arg)
     //input loop
     int length;
     char packet[1024];
+    int lock;
+    
     while(1)
     {
         //read the packet from the ATM
@@ -124,6 +129,62 @@ void* client_thread(void* arg)
         }
         
         //TODO: process packet data
+		// Branch based on the requested operation.
+		int request; enum kRequests{ kBalance, kDeposit, kWithdraw };
+		int argument;
+		std::string username;
+		
+		// Error: user doesn't exist
+		if( users.find( username ) == users.end() ) printf( "[bank] Error 41302\n" );
+		// Error: negative requested balance change
+		if( argument < 0 ) printf( "[bank] Error 41389\n" );
+		// Otherwise, attempt the request
+		else if( request == kBalance )
+		{
+			std::cout << "[bank] User " << username << " has $" 
+			          << static_cast<double>( users[username] ) / 100 << std::endl;
+		}
+		else if( request == kDeposit )
+		{
+		    // Attempt to acquire a lock.
+		    lock = pthread_mutex_lock( &userMutex );
+			
+            int store1 = users[username];
+            int store2 = store1;
+            if( ( store1 + argument ) < store2 )
+                printf( "[bank] Error 41372\n" );
+            else
+            {
+                // Success
+                users[username] += argument;
+                std::cout << "[bank] User " << username << " deposited $"
+		                  << static_cast<double>( argument ) / 100 << std::endl;
+            }	
+            
+		    lock = pthread_mutex_unlock( &userMutex );
+		}
+		else if( request == kWithdraw )
+		{
+			// Attempt to acquire a lock.
+			lock = pthread_mutex_lock( &userMutex );
+			
+		    if( users[username] - argument < 0 )
+		        printf( "[bank] Error 41322\n" );
+		    else
+		    {
+		        // Success
+		        users[username] -= argument;
+                std::cout << "[bank] User " << username << " withdrew $"
+		                  << static_cast<double>( argument ) / 100 << std::endl;
+		    }
+			    
+			lock = pthread_mutex_unlock( &userMutex );
+		}
+		else
+		{
+			// Invalid request.
+			printf( "[bank] Error 41307\n" );
+		}
         
         //TODO: put new data in packet
         
