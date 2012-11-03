@@ -25,8 +25,9 @@ void* client_thread(void* arg);
 void* console_thread(void* arg);
 
 // Create the map to contain the users
-std::map< std::string, long > usersBalance;
+std::map< std::string, long > userBalance;
 pthread_mutex_t userMutex;
+std::map< std::string, std::string > userPIN;
 
 int main(int argc, char* argv[])
 {
@@ -70,9 +71,13 @@ int main(int argc, char* argv[])
     pthread_create(&cthread, NULL, console_thread, NULL);
     
     //Set up the users.
-    usersBalance["Alice"] = 100;
-    usersBalance["Bob"]   = 50;
-    usersBalance["Eve"]   = 0;
+    userBalance["Alice"] = 100;
+    userBalance["Bob"]   = 50;
+    userBalance["Eve"]   = 0;
+    // Set up their keys.
+    userPIN["Alice"] = "4321";
+    userPIN["Bob"]   = "1234";
+    userPIN["Eve"]   = "4130";
     
     //loop forever accepting new connections
     while(1)
@@ -107,13 +112,21 @@ void* client_thread(void* arg)
     if (err != 0) {
         return NULL;
     }
+    
+    std::string random = readRand(64);
+    std::string username;
     while(1)
     {
         std::cout << resp_type;
         if (resp_type.compare("getsalt") == 0) {
+            username = resp_message;
             std::string messageType("sendsalt");
-            std::string random = readRand(64);
             err = send_message(messageType, random, resp_type, resp_message, csock);
+        }
+        else if(resp_type.compare("login") == 0){
+            std::string cornedBeef = hashKey( random, userPIN[username] );
+            if( resp_message == cornedBeef ) printf( "::::D\n" );
+            else printf( ":(\n" );
         }
     }
 
@@ -125,12 +138,12 @@ void* client_thread(void* arg)
 
 bool balance( std::string& username )
 {
-    if( usersBalance.find( username ) == usersBalance.end() ){
+    if( userBalance.find( username ) == userBalance.end() ){
         printf( "[bank] Error: nonexistant user\n" );
         return 1;
     }
     
-	std::cout << "[bank] User " << username << " has $" << usersBalance[username] << std::endl;
+	std::cout << "[bank] User " << username << " has $" << userBalance[username] << std::endl;
 	return 0;
 }
 
@@ -140,11 +153,11 @@ bool deposit( std::string& username, long argument )
     int lock;
     lock = pthread_mutex_lock( &userMutex );
     
-    if( usersBalance.find( username ) == usersBalance.end() ){
+    if( userBalance.find( username ) == userBalance.end() ){
         printf( "[bank] Error: nonexistant user\n" );
         return 1;
     }
-    long store1 = usersBalance[username];
+    long store1 = userBalance[username];
     long store2 = store1;
     if( ( store1 + argument ) < store2 ){
         printf( "[bank] Error: deposit would cause overflow\n" );
@@ -158,7 +171,7 @@ bool deposit( std::string& username, long argument )
     else
     {
         // Success
-        usersBalance[username] += argument;
+        userBalance[username] += argument;
         std::cout << "[bank] User " << username << " deposited $" << argument << std::endl;
     }
     
@@ -172,7 +185,7 @@ bool withdraw( std::string& username, long argument )
     int lock;
     lock = pthread_mutex_lock( &userMutex );
     
-    if( usersBalance.find( username ) == usersBalance.end() ){
+    if( userBalance.find( username ) == userBalance.end() ){
         printf( "[bank] Error: nonexistant user\n" );
         return 1;
     }
@@ -181,7 +194,7 @@ bool withdraw( std::string& username, long argument )
         return 1;
     }
 	
-    usersBalance[username] -= argument;
+    userBalance[username] -= argument;
     std::cout << "[bank] User " << username << " withdrew $" << argument << std::endl;
 	    
 	lock = pthread_mutex_unlock( &userMutex );
@@ -194,11 +207,11 @@ bool transfer( std::string& username1, std::string& username2, long argument )
     int lock;
     lock = pthread_mutex_lock( &userMutex );
     
-    if( usersBalance.find( username1 ) == usersBalance.end() ){
+    if( userBalance.find( username1 ) == userBalance.end() ){
         printf( "[bank] Error: nonexistant user 1\n" );
         return 1;
     }
-    if( usersBalance.find( username2 ) == usersBalance.end() ){
+    if( userBalance.find( username2 ) == userBalance.end() ){
         printf( "[bank] Error: nonexistant user 2\n" );
         return 1;
     }
@@ -206,19 +219,19 @@ bool transfer( std::string& username1, std::string& username2, long argument )
         printf( "[bank] Error: negative transfer amount\n" );
         return 1;
     }
-    if( argument > usersBalance[username1] ){
+    if( argument > userBalance[username1] ){
         printf( "[bank] Error: transfer exceeds host user's balance\n" );
         return 1;
     }
-    long store1 = usersBalance[username2];
+    long store1 = userBalance[username2];
     long store2 = store1;
     if( ( store1 + argument ) < store2 ){
         printf( "[bank] Error: deposit would cause overflow\n" );
         return 1;
     }
     
-    usersBalance[username1] -= argument;
-    usersBalance[username2] += argument;
+    userBalance[username1] -= argument;
+    userBalance[username2] += argument;
     
     std::cout << "[bank] User " << username1 << " transferred $" << argument
               << " to " << username2 << std::endl;

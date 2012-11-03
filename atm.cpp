@@ -57,14 +57,14 @@ void handle_input(std::string & input, int sock) {
         }
 
         //Hash the pin with the salt
-        CryptoPP::SHA512 pin_hash;
+        /* CryptoPP::SHA512 pin_hash;
         pin_hash.Update((byte *) resp_data.c_str(), resp_data.length());
         pin_hash.Update((byte *) PIN.c_str(), PIN.length());
         char pin_hash_buff[64];
-        pin_hash.Final((byte *)pin_hash_buff);
+        pin_hash.Final((byte *)pin_hash_buff); */
 
         msg_type.assign("login");
-        msg_data.assign(pin_hash_buff, 64);
+        msg_data = hashKey( resp_data, PIN );
 
         std::cout << "Sent salt to server" << std::endl;
 

@@ -19,6 +19,21 @@ STR2INT_ERROR str2int (long &i, char const *s)
     return SUCCESS;
 }
 
+std::string hashKey( std::string salt, std::string PIN )
+{
+    //Hash the pin with the salt
+    CryptoPP::SHA512 pin_hash;
+    pin_hash.Update((byte *) salt.c_str(), salt.length());
+    pin_hash.Update((byte *) PIN.c_str(), PIN.length());
+    char pin_hash_buff[64];
+    pin_hash.Final((byte *)pin_hash_buff);
+
+    std::string hashedKey;
+    hashedKey.assign( pin_hash_buff, 64 );
+    
+    return hashedKey;
+}
+
 std::string readRand( int desiredBytes )
 {
     FILE* file = fopen("/dev/urandom", "r");
@@ -82,10 +97,12 @@ int send_message(std::string & type, std::string& data, std::string&response_typ
     std::string response;
     int err = send_socket(message, response, sock);    
     if (err != 0) {
+        printf("error1\n");
         return err;
     }
     size_t sep_pos = response.find('|');
     if (sep_pos == response.npos ){
+        printf("error2\n");
         return -1;
     }
     response_type = response.substr(0, sep_pos); 
