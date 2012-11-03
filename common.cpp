@@ -1,4 +1,3 @@
-
 #include "common.h"
 
 STR2INT_ERROR str2int (long &i, char const *s)
@@ -18,6 +17,18 @@ STR2INT_ERROR str2int (long &i, char const *s)
     }
     i = l;
     return SUCCESS;
+}
+
+std::string readRand( int desiredBytes )
+{
+    FILE* file = fopen("/dev/urandom", "r");
+    char buffer[desiredBytes];
+    fgets(buffer, desiredBytes, file);
+    fclose(file);
+    
+    std::string randomString;
+    randomString.assign(buffer, desiredBytes);
+    return randomString;
 }
 
 int send_socket(std::string& data, std::string& recieved, int sock) {
