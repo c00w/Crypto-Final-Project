@@ -11,6 +11,106 @@
 #include <stdio.h>
 #include <string.h>
 
+
+#include <string>
+#include <iostream>
+
+int send_socket(std::string& data, std::string& recieved, int sock) {
+
+    size_t length = data.length();
+    const char * packet = data.c_str();
+    char recvpacket[1025];
+
+    //send the packet through the proxy to the bank
+    if(sizeof(int) != send(sock, &length, sizeof(int), 0))
+    {
+        printf("fail to send packet length\n");
+        return -1;
+    }
+    if(length != send(sock, (void*)packet, length, 0))
+    {
+        printf("fail to send packet\n");
+        return -1;
+    }
+    
+    //TODO: do something with response packet
+    if(sizeof(int) != recv(sock, &length, sizeof(int), 0))
+    {
+        printf("fail to read packet length\n");
+        return -1;
+    }
+    if(length >= 1024 || length <= 0)
+    {
+        printf("packet too long\n");
+        return -1;
+    }
+    if(length != recv(sock, recvpacket, length, 0))
+    {
+        printf("fail to read packet\n");
+        return -1;
+    }
+    recieved.assign(recvpacket, length);
+}
+
+int send_message(std::string & type, std::string& data, std::string&response_type, std::string& response_message, int sock){
+
+    //Construct message
+    std::string message(type);
+    message.append("|");
+    message.append(data);
+
+    //Send it and get response
+    std::string response;
+    int err = send_socket(message, response, sock);    
+    if (err != 0) {
+        return err;
+    }
+    size_t sep_pos = response.find('|');
+    if (sep_pos == response.npos ){
+        return -1;
+    }
+    response_type = response.substr(0, sep_pos); 
+    response_message = response.substr(sep_pos+1, response.length() - sep_pos);
+    return 0;
+}
+
+std::string User("");
+
+void handle_input(std::string & input, int sock) {
+    if (input.length() <= 6) {
+        return;
+    }
+
+    if (input.substr(0, 5).compare("login") == 0) {
+        if (User.length() > 0) {
+            return;
+        }
+        std::string username = input.substr(6, input.length()-6);
+        if (username.length() <= 0) {
+            return;
+        }
+        char *password = getpass("PIN: ");
+        if (password == NULL) {
+            return;
+        }
+        std::string PIN(password);
+        if (PIN.length() != 4) {
+            return;
+        }
+        std::string msg_type("getsalt");
+        std::string resp_type;
+        std::string resp_salt;
+        int err = send_message(msg_type, username, resp_type, resp_salt, sock);
+        if (err != 0) {
+            return;
+        }
+        
+        std::cout << PIN;
+    }
+}
+
+
+
 int main(int argc, char* argv[])
 {
     if(argc != 2)
@@ -52,43 +152,14 @@ int main(int argc, char* argv[])
         //TODO: your input parsing code has to put data here
         char packet[1024];
         int length = 1;
-        
-        //input parsing
-        if(!strcmp(buf, "logout"))
-            break;
-        //TODO: other commands
-        
-        //send the packet through the proxy to the bank
-        if(sizeof(int) != send(sock, &length, sizeof(int), 0))
-        {
-            printf("fail to send packet length\n");
-            break;
-        }
-        if(length != send(sock, (void*)packet, length, 0))
-        {
-            printf("fail to send packet\n");
-            break;
-        }
-        
-        //TODO: do something with response packet
-        if(sizeof(int) != recv(sock, &length, sizeof(int), 0))
-        {
-            printf("fail to read packet length\n");
-            break;
-        }
-        if(length >= 1024)
-        {
-            printf("packet too long\n");
-            break;
-        }
-        if(length != recv(sock, packet, length, 0))
-        {
-            printf("fail to read packet\n");
-            break;
-        }
+       
+        //Upcast string
+        std::string input(buf);
+        handle_input(input, sock);
     }
     
     //cleanup
     close(sock);
     return 0;
 }
+
