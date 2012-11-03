@@ -66,6 +66,7 @@ int send_socket(std::string& data, std::string& recieved, int sock) {
         return -1;
     }
     recieved.assign(recvpacket, length);
+    return 0;
 }
 
 int send_message(std::string & type, std::string& data, std::string&response_type, std::string& response_message, int sock){
