@@ -1,0 +1,10 @@
+General Message structure for the banking protocol under all of the encryption
+
+Command|data
+Current commands
+getsalt|username
+    Sent by client to get a salt for a username
+sendsalt|salt
+    Sent by bak, gives client a unique salt for the pin
+login|hashedpin
+    Sent by client is SHA512(salt|PIN)
