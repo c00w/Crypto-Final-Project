@@ -219,7 +219,7 @@ void* console_thread(void* arg)
 
         // Convert to c++ style string
         std::string input(buf);
-        if (input.length() < 7) {
+        if (input.length() < 8) {
             continue;
         }
 
