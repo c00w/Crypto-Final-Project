@@ -109,7 +109,7 @@ void* client_thread(void* arg)
     }
     while(1)
     {
-        if (resp_type.compare("getsalt")) {
+        if (resp_type.compare("getsalt") == 0) {
             std::string messageType("sendsalt");
             std::string random = readRand(64);
             err = send_message(messageType, random, resp_type, resp_message, csock);
