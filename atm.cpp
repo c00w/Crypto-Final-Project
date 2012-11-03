@@ -75,11 +75,14 @@ void handle_input(std::string & input, int sock) {
             return;
         }
         
-        if (resp_data.length() && resp_data.compare("0")) {
+        if (resp_data.compare("0") == 0) {
             std::cout << "Logged in" << std::endl;
         }
+        else{
+            std::cout << "Bad login" << std::endl;
+        }
         User.assign(username);
-    } else if (input.substr(0,6).compare("logout")) {
+    } else if (input.substr(0,6).compare("logout") == 0) {
        if (User.length() == 0) {
             return;
        }
