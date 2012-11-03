@@ -11,9 +11,37 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <string.h>
+#include <errno.h>
+#include <limits.h>
+
+#include <string>
+#include <iostream>
+#include <stdexcept>
+
+
 
 void* client_thread(void* arg);
 void* console_thread(void* arg);
+enum STR2INT_ERROR { SUCCESS, OVERFLOW, UNDERFLOW, INCONVERTIBLE };
+
+STR2INT_ERROR str2int (long &i, char const *s)
+{
+    char *end;
+    long  l;
+    errno = 0;
+    l = strtol(s, &end, 0); //Base = 10
+    if ((errno == ERANGE && l == LONG_MAX) || l > INT_MAX) {
+        return OVERFLOW;
+    }
+    if ((errno == ERANGE && l == LONG_MIN) || l < INT_MIN) {
+        return UNDERFLOW;
+    }
+    if (*s == '\0' || *end != '\0') {
+        return INCONVERTIBLE;
+    }
+    i = l;
+    return SUCCESS;
+}
 
 int main(int argc, char* argv[])
 {
@@ -127,7 +155,40 @@ void* console_thread(void* arg)
         printf("bank> ");
         fgets(buf, 79, stdin);
         buf[strlen(buf)-1] = '\0';  //trim off trailing newline
-        
-        //TODO: your input parsing code has to go here
+
+        // Convert to c++ style string
+        std::string input(buf);
+        if (input.length() < 7) {
+            continue;
+        }
+        if (input.substr(0,7).compare("deposit") == 0) {
+            std::string params = input.substr(8, input.length()-8);
+
+            size_t space_index = params.find(' ');
+            if (space_index == input.npos){
+                continue;
+            }
+
+            std::string username = params.substr(0, space_index);
+            std::string balance_str = params.substr(space_index+1, params.length()-space_index);
+            if (username.length() == 0 or balance_str.length() == 0) {
+                continue;
+            }
+
+            long balance;
+            if (str2int(balance, balance_str.c_str()) != SUCCESS) {
+                continue;
+            }
+            if (balance <= 0) {
+                continue;
+            }
+
+            std::cout << username << std::endl <<  balance << std::endl;
+        } else if (input.substr(0,7).compare("balance") == 0) {
+            std::string username = input.substr(8, input.length()-8);
+            std:: cout << username << std::endl;
+        }
     }
 }
+
+
