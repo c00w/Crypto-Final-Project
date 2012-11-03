@@ -1,6 +1,25 @@
 
 #include "common.h"
 
+STR2INT_ERROR str2int (long &i, char const *s)
+{
+    char *end;
+    long  l;
+    errno = 0;
+    l = strtol(s, &end, 0); //Base = 10
+    if ((errno == ERANGE && l == LONG_MAX) || l > INT_MAX) {
+        return OVERFLOW;
+    }
+    if ((errno == ERANGE && l == LONG_MIN) || l < INT_MIN) {
+        return UNDERFLOW;
+    }
+    if (*s == '\0' || *end != '\0') {
+        return INCONVERTIBLE;
+    }
+    i = l;
+    return SUCCESS;
+}
+
 int send_socket(std::string& data, std::string& recieved, int sock) {
 
     size_t length = data.length();

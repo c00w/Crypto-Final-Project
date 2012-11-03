@@ -6,8 +6,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
+#include <limits.h>
 
 #include <string>
 
-int send_socket(std::string& data, std::string& recieved, int sock);
+enum STR2INT_ERROR { SUCCESS, OVERFLOW, UNDERFLOW, INCONVERTIBLE };
+STR2INT_ERROR str2int (long &i, char const *s);
+
 int send_message(std::string & type, std::string& data, std::string&response_type, std::string& response_message, int sock);
