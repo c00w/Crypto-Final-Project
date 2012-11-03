@@ -70,7 +70,14 @@ void handle_input(std::string & input, int sock) {
         //Try and login
         err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
 
-        std::cout << PIN;
+        if (err != 0 || resp_type.compare("loginresult") != 0) {
+            return;
+        }
+        
+        if (resp_data.length() && resp_data.compare("0")) {
+            std::cout << "Logged in" << std::endl;
+        }
+        User.assign(username);
     }
 }
 
