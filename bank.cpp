@@ -109,7 +109,7 @@ void* client_thread(void* arg)
     while(1)
     {
         if (resp_type.substr(0,4).compare("getsalt")) {
-
+            err = send_message("sendsalt", readRand(64), resp_type, resp_message, csock);
         }
     }
 

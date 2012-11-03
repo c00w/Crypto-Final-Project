@@ -14,4 +14,6 @@
 enum STR2INT_ERROR { SUCCESS, OVERFLOW, UNDERFLOW, INCONVERTIBLE };
 STR2INT_ERROR str2int (long &i, char const *s);
 
+std::string readRand( int desiredBytes );
+
 int send_message(std::string & type, std::string& data, std::string&response_type, std::string& response_message, int sock);
