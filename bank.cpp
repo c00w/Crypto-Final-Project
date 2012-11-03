@@ -43,7 +43,7 @@ STR2INT_ERROR str2int (long &i, char const *s)
 }
 
 // Create the map to contain the users
-std::map< std::string, unsigned long int > users;
+std::map< std::string, long > usersBalance;
 pthread_mutex_t userMutex;
 
 int main(int argc, char* argv[])
@@ -87,6 +87,11 @@ int main(int argc, char* argv[])
     pthread_t cthread;
     pthread_create(&cthread, NULL, console_thread, NULL);
     
+    //Set up the users.
+    usersBalance["Alice"] = 10000;
+    usersBalance["Bob"]   = 5000;
+    usersBalance["Eve"]   = 0;
+    
     //loop forever accepting new connections
     while(1)
     {
@@ -129,63 +134,7 @@ void* client_thread(void* arg)
         }
         
         //TODO: process packet data
-		// Branch based on the requested operation.
-		int request; enum kRequests{ kBalance, kDeposit, kWithdraw };
-		int argument;
-		std::string username;
 		
-		// Error: user doesn't exist
-		if( users.find( username ) == users.end() ) printf( "[bank] Error 41302\n" );
-		// Error: negative requested balance change
-		if( argument < 0 ) printf( "[bank] Error 41389\n" );
-		// Otherwise, attempt the request
-		else if( request == kBalance )
-		{
-			std::cout << "[bank] User " << username << " has $" 
-			          << static_cast<double>( users[username] ) / 100 << std::endl;
-		}
-		else if( request == kDeposit )
-		{
-		    // Attempt to acquire a lock.
-		    lock = pthread_mutex_lock( &userMutex );
-			
-            int store1 = users[username];
-            int store2 = store1;
-            if( ( store1 + argument ) < store2 )
-                printf( "[bank] Error 41372\n" );
-            else
-            {
-                // Success
-                users[username] += argument;
-                std::cout << "[bank] User " << username << " deposited $"
-		                  << static_cast<double>( argument ) / 100 << std::endl;
-            }	
-            
-		    lock = pthread_mutex_unlock( &userMutex );
-		}
-		else if( request == kWithdraw )
-		{
-			// Attempt to acquire a lock.
-			lock = pthread_mutex_lock( &userMutex );
-			
-		    if( users[username] - argument < 0 )
-		        printf( "[bank] Error 41322\n" );
-		    else
-		    {
-		        // Success
-		        users[username] -= argument;
-                std::cout << "[bank] User " << username << " withdrew $"
-		                  << static_cast<double>( argument ) / 100 << std::endl;
-		    }
-			    
-			lock = pthread_mutex_unlock( &userMutex );
-		}
-		else
-		{
-			// Invalid request.
-			printf( "[bank] Error 41307\n" );
-		}
-        
         //TODO: put new data in packet
         
         //send the new packet back to the client
@@ -206,6 +155,43 @@ void* client_thread(void* arg)
 
     close(csock);
     return NULL;
+}
+
+void balance( std::string username )
+{
+	std::cout << "[bank] User " << username << " has $" << argument << std::endl;
+}
+
+void deposit( std::string username, long argument )
+{
+    // Attempt to acquire a lock.
+    int lock;
+    lock = pthread_mutex_lock( &userMutex );
+	
+    long store1 = usersBalance[username];
+    long store2 = store1;
+    if( ( store1 + argument ) < store2 )
+        printf( "[bank] Error 41372\n" );
+    else
+    {
+        // Success
+        usersBalance[username] += argument;
+        std::cout << "[bank] User " << username << " deposited $" << argument << std::endl;
+    }	
+    
+    lock = pthread_mutex_unlock( &userMutex );
+}
+
+void withdraw( std::string username, long argument )
+{
+	// Attempt to acquire a lock.
+    int lock;
+	lock = pthread_mutex_lock( &userMutex );
+	
+    usersBalance[username] -= argument;
+    std::cout << "[bank] User " << username << " withdrew $" << argument << endl;
+	    
+	lock = pthread_mutex_unlock( &userMutex );
 }
 
 void* console_thread(void* arg)
@@ -246,12 +232,18 @@ void* console_thread(void* arg)
                 continue;
             }
 
-            std::cout << username << std::endl <<  balance << std::endl;
+            //std::cout << username << std::endl <<  balance << std::endl;
+            
+            if( usersBalance.find( username ) == usersBalance.end() ) continue;
+            deposit( username, balance );
 
         //Handle balance
         } else if (input.substr(0,7).compare("balance") == 0) {
             std::string username = input.substr(8, input.length()-8);
-            std:: cout << username << std::endl;
+            //std:: cout << username << std::endl;
+            
+            if( usersBalance.find( username ) == usersBalance.end() ) continue;
+            balance( username );
         }
     }
 }
