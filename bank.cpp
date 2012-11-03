@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <string.h>
+#include <errno.h>
+#include <limits.h>
 
 #include <string>
 #include <iostream>
@@ -95,40 +97,20 @@ void* client_thread(void* arg)
     //input loop
     int length;
     char packet[1024];
-    int lock;
+    int lock, err;
     
+    std::string empty("");
+    std::string resp_type;
+    std::string resp_message;
+    err = send_message(empty, empty, resp_type, resp_message, csock); 
+    if (err != 0) {
+        return NULL;
+    }
     while(1)
     {
-        //read the packet from the ATM
-        if(sizeof(int) != recv(csock, &length, sizeof(int), 0))
-            break;
-        if(length >= 1024)
-        {
-            printf("packet too long\n");
-            break;
-        }
-        if(length != recv(csock, packet, length, 0))
-        {
-            printf("[bank] fail to read packet\n");
-            break;
-        }
-        
-        //TODO: process packet data
-		
-        //TODO: put new data in packet
-        
-        //send the new packet back to the client
-        if(sizeof(int) != send(csock, &length, sizeof(int), 0))
-        {
-            printf("[bank] fail to send packet length\n");
-            break;
-        }
-        if(length != send(csock, (void*)packet, length, 0))
-        {
-            printf("[bank] fail to send packet\n");
-            break;
-        }
+        if (resp_type.substr(0,4).compare("getsalt")) {
 
+        }
     }
 
     printf("[bank] client ID #%d disconnected\n", csock);

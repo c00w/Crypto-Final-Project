@@ -27,12 +27,12 @@ int send_socket(std::string& data, std::string& recieved, int sock) {
     char recvpacket[1025];
 
     //send the packet through the proxy to the bank
-    if(sizeof(int) != send(sock, &length, sizeof(int), 0))
+    if(length != 0 && sizeof(int) != send(sock, &length, sizeof(int), 0))
     {
         printf("fail to send packet length\n");
         return -1;
     }
-    if(length != send(sock, (void*)packet, length, 0))
+    if(length != 0 && length != send(sock, (void*)packet, length, 0))
     {
         printf("fail to send packet\n");
         return -1;
@@ -61,8 +61,10 @@ int send_message(std::string & type, std::string& data, std::string&response_typ
 
     //Construct message
     std::string message(type);
-    message.append("|");
-    message.append(data);
+    if (type.length() != 0) {
+        message.append("|");
+        message.append(data);
+    }
 
     //Send it and get response
     std::string response;
