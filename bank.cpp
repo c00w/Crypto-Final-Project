@@ -222,6 +222,8 @@ void* console_thread(void* arg)
         if (input.length() < 7) {
             continue;
         }
+
+        //Handle deposit
         if (input.substr(0,7).compare("deposit") == 0) {
             std::string params = input.substr(8, input.length()-8);
 
@@ -245,6 +247,8 @@ void* console_thread(void* arg)
             }
 
             std::cout << username << std::endl <<  balance << std::endl;
+
+        //Handle balance
         } else if (input.substr(0,7).compare("balance") == 0) {
             std::string username = input.substr(8, input.length()-8);
             std:: cout << username << std::endl;
