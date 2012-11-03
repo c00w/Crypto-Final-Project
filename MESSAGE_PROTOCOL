@@ -10,3 +10,7 @@ login|hashedpin
     Sent by client is SHA512(salt|PIN)
 loginresult|result
     Sent by bank result is 0 for success, 1 for failure
+logout|
+    Sent by client to logout
+logoutresult|result
+    Sent by bank. Result is 0 for success, 1 for failure

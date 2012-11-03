@@ -79,6 +79,20 @@ void handle_input(std::string & input, int sock) {
             std::cout << "Logged in" << std::endl;
         }
         User.assign(username);
+    } else if (input.substr(0,6).compare("logout")) {
+       if (User.length() == 0) {
+            return;
+       }
+
+       std::string msg_type("logout"), msg_data(""), resp_type, resp_data;
+       int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
+       if (err != 0 || resp_type.compare("logout") != 0) {
+            return;
+       }
+       if (resp_data.compare("0")) {
+            std::cout << "Logged out" << std::endl;
+            User.assign("");
+       }
     }
 }
 
