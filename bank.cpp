@@ -11,36 +11,16 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <string.h>
-#include <errno.h>
-#include <limits.h>
 
 #include <string>
 #include <iostream>
 #include <stdexcept>
 #include <map>
 
+#include "common.h"
+
 void* client_thread(void* arg);
 void* console_thread(void* arg);
-enum STR2INT_ERROR { SUCCESS, OVERFLOW, UNDERFLOW, INCONVERTIBLE };
-
-STR2INT_ERROR str2int (long &i, char const *s)
-{
-    char *end;
-    long  l;
-    errno = 0;
-    l = strtol(s, &end, 0); //Base = 10
-    if ((errno == ERANGE && l == LONG_MAX) || l > INT_MAX) {
-        return OVERFLOW;
-    }
-    if ((errno == ERANGE && l == LONG_MIN) || l < INT_MIN) {
-        return UNDERFLOW;
-    }
-    if (*s == '\0' || *end != '\0') {
-        return INCONVERTIBLE;
-    }
-    i = l;
-    return SUCCESS;
-}
 
 // Create the map to contain the users
 std::map< std::string, long > usersBalance;
