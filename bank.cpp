@@ -19,6 +19,8 @@
 #include <stdexcept>
 #include <map>
 
+#include "common.h"
+
 void* client_thread(void* arg);
 void* console_thread(void* arg);
 enum STR2INT_ERROR { SUCCESS, OVERFLOW, UNDERFLOW, INCONVERTIBLE };
