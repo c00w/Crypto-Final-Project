@@ -57,12 +57,6 @@ void handle_input(std::string & input, int sock) {
         }
 
         //Hash the pin with the salt
-        /* CryptoPP::SHA512 pin_hash;
-        pin_hash.Update((byte *) resp_data.c_str(), resp_data.length());
-        pin_hash.Update((byte *) PIN.c_str(), PIN.length());
-        char pin_hash_buff[64];
-        pin_hash.Final((byte *)pin_hash_buff); */
-
         msg_type.assign("login");
         msg_data = hashKey( resp_data, PIN );
 
@@ -79,7 +73,9 @@ void handle_input(std::string & input, int sock) {
             std::cout << "Logged in" << std::endl;
         }
         User.assign(username);
-    } else if (input.substr(0,6).compare("logout")) {
+
+
+    } else if (input.substr(0,6).compare("logout") == 0) {
        if (User.length() == 0) {
             return;
        }
@@ -93,6 +89,12 @@ void handle_input(std::string & input, int sock) {
             std::cout << "Logged out" << std::endl;
             User.assign("");
        }
+    } else if (input.substr(0, 7).compare("balance") == 0) {
+        std::string msg_type("balance"), msg_data(""), resp_type, resp_data;
+        int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
+        if (err != 0) {
+            return;
+        }
     }
 }
 
