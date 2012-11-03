@@ -15,6 +15,8 @@
 #include <string>
 #include <iostream>
 
+#include "cryptopp/sha.h"
+
 int send_socket(std::string& data, std::string& recieved, int sock) {
 
     size_t length = data.length();
