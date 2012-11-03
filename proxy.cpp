@@ -114,7 +114,8 @@ void* client_thread(void* arg)
             printf("[proxy] fail to read packet\n");
             break;
         }
-        
+       
+        printf("Packet from proxy to bank\n");
         //TODO: tamper with packet going from ATM to bank
         
         //forward packet to bank
@@ -147,6 +148,7 @@ void* client_thread(void* arg)
         }
         
         //TODO: tamper with packet going from bank to ATM
+        printf("Sent packet to bank\n");
 
         //forward packet to ATM
         if(sizeof(int) != send(csock, &length, sizeof(int), 0))
