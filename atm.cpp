@@ -42,14 +42,34 @@ void handle_input(std::string & input, int sock) {
         if (PIN.length() != 4) {
             return;
         }
+
+        //Get a salt from the server
         std::string msg_type("getsalt");
+        std::string msg_data(username);
         std::string resp_type;
-        std::string resp_salt;
-        int err = send_message(msg_type, username, resp_type, resp_salt, sock);
-        if (err != 0) {
+        std::string resp_data;
+        int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
+
+        printf("Recieved hash from server\n");
+
+        if (err != 0 || resp_type.compare("sendsalt") != 0 || resp_data.length() <28) {
             return;
         }
-        
+
+        //Hash the pin with the salt
+        CryptoPP::SHA512 pin_hash;
+        pin_hash.Update((byte *) resp_data.c_str(), resp_data.length());
+        pin_hash.Update((byte *) PIN.c_str(), PIN.length());
+        char pin_hash_buff[64];
+        pin_hash.Final((byte *)pin_hash_buff);
+
+        msg_type.assign("login");
+        msg_data.assign(pin_hash_buff, 64);
+
+        printf("Sent hash to server");
+        //Try and login
+        err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
+
         std::cout << PIN;
     }
 }
