@@ -125,8 +125,15 @@ void* client_thread(void* arg)
         }
         else if(resp_type.compare("login") == 0){
             std::string cornedBeef = hashKey( random, userPIN[username] );
-            if( resp_message == cornedBeef ) printf( "::::D\n" );
-            else printf( ":(\n" );
+            std::string messageType("loginresult");
+            std::string messageBody;
+            if(resp_message.compare(cornedBeef) == 0)
+            {
+                messageBody.assign("0");
+            }
+            else
+                messageBody.assign("1");
+            err = send_message(messageType, messageBody, resp_type, resp_message, csock);
         }
     }
 
