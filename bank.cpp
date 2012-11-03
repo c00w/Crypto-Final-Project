@@ -88,8 +88,8 @@ int main(int argc, char* argv[])
     pthread_create(&cthread, NULL, console_thread, NULL);
     
     //Set up the users.
-    usersBalance["Alice"] = 10000;
-    usersBalance["Bob"]   = 5000;
+    usersBalance["Alice"] = 100;
+    usersBalance["Bob"]   = 50;
     usersBalance["Eve"]   = 0;
     
     //loop forever accepting new connections
@@ -159,7 +159,7 @@ void* client_thread(void* arg)
 
 void balance( std::string username )
 {
-	std::cout << "[bank] User " << username << " has $" << argument << std::endl;
+	std::cout << "[bank] User " << username << " has $" << usersBalance[username] << std::endl;
 }
 
 void deposit( std::string username, long argument )
@@ -171,7 +171,7 @@ void deposit( std::string username, long argument )
     long store1 = usersBalance[username];
     long store2 = store1;
     if( ( store1 + argument ) < store2 )
-        printf( "[bank] Error 41372\n" );
+        printf( "[bank] Error: deposit would cause overflow\n" );
     else
     {
         // Success
@@ -189,7 +189,7 @@ void withdraw( std::string username, long argument )
 	lock = pthread_mutex_lock( &userMutex );
 	
     usersBalance[username] -= argument;
-    std::cout << "[bank] User " << username << " withdrew $" << argument << endl;
+    std::cout << "[bank] User " << username << " withdrew $" << argument << std::endl;
 	    
 	lock = pthread_mutex_unlock( &userMutex );
 }
@@ -234,7 +234,11 @@ void* console_thread(void* arg)
 
             //std::cout << username << std::endl <<  balance << std::endl;
             
-            if( usersBalance.find( username ) == usersBalance.end() ) continue;
+            if( usersBalance.find( username ) == usersBalance.end() )
+            {
+                printf( "[bank] Error: nonexistant user\n" );
+                continue;
+            }
             deposit( username, balance );
 
         //Handle balance
@@ -242,7 +246,11 @@ void* console_thread(void* arg)
             std::string username = input.substr(8, input.length()-8);
             //std:: cout << username << std::endl;
             
-            if( usersBalance.find( username ) == usersBalance.end() ) continue;
+            if( usersBalance.find( username ) == usersBalance.end() )
+            {
+                printf( "[bank] Error: nonexistant user\n" );
+                continue;
+            }
             balance( username );
         }
     }
