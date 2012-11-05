@@ -18,3 +18,7 @@ balance|
     Sent by atm. Requests balance from bank
 balanceresult|amount
     sent by bank. Amount is the string format of their balance in dollars
+transfer|user|amount
+    Sent by atm. Requests a transfer from the bank
+transferresult|result
+    Sent by bank. Result is 0 for sucess, 1 for failure

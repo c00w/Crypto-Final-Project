@@ -101,6 +101,30 @@ void handle_input(std::string & input, int sock) {
             return;
         }
         std::cout << "Balance: " << resp_data << std::endl;
+    } else if (input.substr(0,8).compare("transfer")) {
+        if (input.length() <9) {
+            return;
+        }
+        std::string params = input.substr(9, input.length() -9);
+
+        size_t space_index = params.find(' ');
+        if (space_index == -1) {
+            return;
+        }
+        std::string amount = params.substr(0, space_index);
+        std::string username = params.substr(space_index, params.length()-space_index);
+
+        std::string msg_type("transfer"), msg_data(amount), resp_type, resp_data; 
+        msg_data.append("|");
+        msg_data.append(username);
+        int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
+        if (err != 0 || resp_type.compare("transferresult") != 0) {
+            return;
+        }
+        
+        if (resp_data.compare("0") == 0){
+            std::cout << "Transferred" << std::endl;
+        }
     }
 }
 
