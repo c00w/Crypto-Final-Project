@@ -100,9 +100,7 @@ void* client_thread(void* arg)
     printf("[bank] client ID #%d connected\n", csock);
     
     //input loop
-    int length;
-    char packet[1024];
-    int lock, err;
+    int err;
     
     std::string empty("");
     std::string resp_type;
@@ -160,6 +158,9 @@ bool deposit( std::string& username, long argument )
     // Attempt to acquire a lock.
     int lock;
     lock = pthread_mutex_lock( &userMutex );
+    if (lock != 0) {
+        return 1;
+    }
     
     if( userBalance.find( username ) == userBalance.end() ){
         printf( "[bank] Error: nonexistant user\n" );
@@ -182,8 +183,11 @@ bool deposit( std::string& username, long argument )
         userBalance[username] += argument;
         std::cout << "[bank] User " << username << " deposited $" << argument << std::endl;
     }
-    
+
     lock = pthread_mutex_unlock( &userMutex );
+    if (lock != 0) {
+        return 1;
+    }
     return 0;
 }
 
@@ -192,7 +196,11 @@ bool withdraw( std::string& username, long argument )
     // Attempt to acquire a lock.
     int lock;
     lock = pthread_mutex_lock( &userMutex );
-    
+
+    if (lock != 0) {
+        return 1;
+    }
+
     if( userBalance.find( username ) == userBalance.end() ){
         printf( "[bank] Error: nonexistant user\n" );
         return 1;
@@ -206,6 +214,9 @@ bool withdraw( std::string& username, long argument )
     std::cout << "[bank] User " << username << " withdrew $" << argument << std::endl;
 	    
 	lock = pthread_mutex_unlock( &userMutex );
+    if (lock != 0) {
+        return 1;
+    }
 	return 0;
 }
 
@@ -214,7 +225,10 @@ bool transfer( std::string& username1, std::string& username2, long argument )
     // Attempt to acquire a lock.
     int lock;
     lock = pthread_mutex_lock( &userMutex );
-    
+    if (lock != 0) {
+        return 1;
+    }
+
     if( userBalance.find( username1 ) == userBalance.end() ){
         printf( "[bank] Error: nonexistant user 1\n" );
         return 1;
@@ -245,6 +259,9 @@ bool transfer( std::string& username1, std::string& username2, long argument )
               << " to " << username2 << std::endl;
               
     lock = pthread_mutex_unlock( &userMutex );
+    if (lock != 0) {
+        return 1;
+    }
     return 0;
 }
 
@@ -294,6 +311,7 @@ void* console_thread(void* arg)
             balance( username );
         }
     }
+    return NULL;
 }
 
 
