@@ -21,26 +21,30 @@
 
 std::string User("");
 
-void handle_input(std::string & input, int sock) {
+void error() {
+    std::cout<< "Error" << std::endl;
+}
+
+int handle_input(std::string & input, int sock) {
     if (input.length() <= 6) {
-        return;
+        return 1;
     }
 
     if (input.substr(0, 5).compare("login") == 0) {
         if (User.length() > 0) {
-            return;
+            return 1;
         }
         std::string username = input.substr(6, input.length()-6);
         if (username.length() <= 0) {
-            return;
+            return 1;
         }
         char *password = getpass("PIN: ");
         if (password == NULL) {
-            return;
+            return 1;
         }
         std::string PIN(password);
         if (PIN.length() != 4) {
-            return;
+            return 1;
         }
 
         //Get a salt from the server
@@ -53,7 +57,7 @@ void handle_input(std::string & input, int sock) {
         std::cout << "Recieved salt" << std::endl;
 
         if (err != 0 || resp_type.compare("sendsalt") != 0 || resp_data.length() <28) {
-            return;
+            return 1;
         }
 
         //Hash the pin with the salt
@@ -66,7 +70,7 @@ void handle_input(std::string & input, int sock) {
         err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
 
         if (err != 0 || resp_type.compare("loginresult") != 0) {
-            return;
+            return 1;
         }
         
         if (resp_data.compare("0") == 0) {
@@ -76,19 +80,19 @@ void handle_input(std::string & input, int sock) {
             std::cout << "Bad login" << std::endl;
         }
         User.assign(username);
-        return;
+        return 0;
     }
 
     //User guard
     if (User.length() == 0) {
-        return;
+        return 1;
     }
 
     if (input.substr(0,6).compare("logout") == 0) {
        std::string msg_type("logout"), msg_data(""), resp_type, resp_data;
        int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
        if (err != 0 || resp_type.compare("logout") != 0) {
-            return;
+            return 1;
        }
        if (resp_data.compare("0")) {
             std::cout << "Logged out" << std::endl;
@@ -98,18 +102,18 @@ void handle_input(std::string & input, int sock) {
         std::string msg_type("balance"), msg_data(""), resp_type, resp_data;
         int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
         if (err != 0 || resp_type.compare("balanceresult") != 0) {
-            return;
+            return 1;
         }
         std::cout << "Balance: " << resp_data << std::endl;
     } else if (input.substr(0,8).compare("transfer")) {
         if (input.length() <9) {
-            return;
+            return 1;
         }
         std::string params = input.substr(9, input.length() -9);
 
         size_t space_index = params.find(' ');
         if (space_index == params.npos) {
-            return;
+            return 1;
         }
         std::string amount = params.substr(0, space_index);
         std::string username = params.substr(space_index, params.length()-space_index);
@@ -119,7 +123,7 @@ void handle_input(std::string & input, int sock) {
         msg_data.append(username);
         int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
         if (err != 0 || resp_type.compare("transferresult") != 0) {
-            return;
+            return 1;
         }
         
         if (resp_data.compare("0") == 0){
@@ -127,19 +131,22 @@ void handle_input(std::string & input, int sock) {
         }
     } else if (input.substr(0, 8).compare("withdraw")==0) {
         if (input.length() <9) {
-            return;
+            return 1;
         }
         std::string amount = input.substr(9, input.length() -9);
         std::string msg_type("withdraw"), msg_data(amount), resp_type, resp_data;
         int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
         if (err != 0 || resp_type.compare("withdrawresult") != 0) {
-            return;
+            return 1;
         }
 
         if (resp_data.compare("0") == 0) {
             std::cout << amount << " withdrawn" << std::endl;
         }
+    } else {
+        return 1;
     }
+    return 0;
 }
 
 
@@ -184,7 +191,10 @@ int main(int argc, char* argv[])
         
         //Upcast string
         std::string input(buf);
-        handle_input(input, sock);
+        int err = handle_input(input, sock);
+        if (err != 0) {
+            error();
+        }
     }
     
     //cleanup
