@@ -1,4 +1,4 @@
-FLAGS = -m32 -g 
+FLAGS = -m32 -g -Wall
 COMMON_FILES = common.cpp
 
 all:

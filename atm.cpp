@@ -108,7 +108,7 @@ void handle_input(std::string & input, int sock) {
         std::string params = input.substr(9, input.length() -9);
 
         size_t space_index = params.find(' ');
-        if (space_index == -1) {
+        if (space_index == params.npos) {
             return;
         }
         std::string amount = params.substr(0, space_index);
@@ -124,6 +124,20 @@ void handle_input(std::string & input, int sock) {
         
         if (resp_data.compare("0") == 0){
             std::cout << "Transferred" << std::endl;
+        }
+    } else if (input.substr(0, 8).compare("withdraw")==0) {
+        if (input.length() <9) {
+            return;
+        }
+        std::string amount = input.substr(9, input.length() -9);
+        std::string msg_type("withdraw"), msg_data(amount), resp_type, resp_data;
+        int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
+        if (err != 0 || resp_type.compare("withdrawresult") != 0) {
+            return;
+        }
+
+        if (resp_data.compare("0") == 0) {
+            std::cout << amount << " withdrawn" << std::endl;
         }
     }
 }
@@ -168,10 +182,6 @@ int main(int argc, char* argv[])
         fgets(buf, 79, stdin);
         buf[strlen(buf)-1] = '\0';  //trim off trailing newline
         
-        //TODO: your input parsing code has to put data here
-        char packet[1024];
-        int length = 1;
-       
         //Upcast string
         std::string input(buf);
         handle_input(input, sock);

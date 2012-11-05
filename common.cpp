@@ -58,7 +58,7 @@ int send_socket(std::string& data, std::string& recieved, int sock) {
         printf("fail to send packet length\n");
         return -1;
     }
-    if(length != 0 && length != send(sock, (void*)packet, length, 0))
+    if(length != 0 && (int)length != send(sock, (void*)packet, length, 0))
     {
         printf("fail to send packet\n");
         return -1;
@@ -75,7 +75,7 @@ int send_socket(std::string& data, std::string& recieved, int sock) {
         printf("packet too long\n");
         return -1;
     }
-    if(length != recv(sock, recvpacket, length, 0))
+    if((int)length != recv(sock, recvpacket, length, 0))
     {
         printf("fail to read packet\n");
         return -1;
