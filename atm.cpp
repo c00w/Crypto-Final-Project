@@ -76,12 +76,15 @@ void handle_input(std::string & input, int sock) {
             std::cout << "Bad login" << std::endl;
         }
         User.assign(username);
+        return;
+    }
 
-    } else if (input.substr(0,6).compare("logout") == 0) {
-       if (User.length() == 0) {
-            return;
-       }
+    //User guard
+    if (User.length() == 0) {
+        return;
+    }
 
+    if (input.substr(0,6).compare("logout") == 0) {
        std::string msg_type("logout"), msg_data(""), resp_type, resp_data;
        int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
        if (err != 0 || resp_type.compare("logout") != 0) {
@@ -94,9 +97,10 @@ void handle_input(std::string & input, int sock) {
     } else if (input.substr(0, 7).compare("balance") == 0) {
         std::string msg_type("balance"), msg_data(""), resp_type, resp_data;
         int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
-        if (err != 0) {
+        if (err != 0 || resp_type.compare("balanceresult") != 0) {
             return;
         }
+        std::cout << "Balance: " << resp_data << std::endl;
     }
 }
 

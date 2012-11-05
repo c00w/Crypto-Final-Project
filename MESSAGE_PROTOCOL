@@ -14,3 +14,7 @@ logout|
     Sent by client to logout
 logoutresult|result
     Sent by bank. Result is 0 for success, 1 for failure
+balance|
+    Sent by atm. Requests balance from bank
+balanceresult|amount
+    sent by bank. Amount is the string format of their balance in dollars
