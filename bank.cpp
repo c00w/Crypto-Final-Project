@@ -110,6 +110,7 @@ void* client_thread(void* arg)
     err = send_message(empty, empty, resp_type, resp_message, csock); 
     printf("Returned from 1st recieve\n");
     if (err != 0) {
+        close(csock);
         return NULL;
     }
     
