@@ -232,31 +232,29 @@ void* client_thread(void* arg)
     std::string empty("");
     std::string resp_type;
     std::string resp_message;
-    err = send_message(empty, empty, resp_type, resp_message, csock); 
-    
+    std::string messageBody(""), messageType("");
     std::string random = readRand(64);
     std::string username;
+    err = send_message(messageBody, messageType, resp_type, resp_message, csock);
+
     while(err != 0)
     {
         if( resp_type.compare("getsalt") == 0 ) {
             username = resp_message;
             std::string messageType("sendsalt");
-            err = send_message(messageType, random, resp_type, resp_message, csock);
+            messageBody.assign(random);
         } else if( resp_type.compare("login") == 0 ){
             std::string cornedBeef = hashKey( random, userPIN[username] );
-            std::string messageType("loginresult");
-            std::string messageBody;
+            messageType.assign("loginresult");
             if(resp_message.compare(cornedBeef) == 0)
                 messageBody.assign("0");
             else{
                 messageBody.assign("1");
                 username.assign("");
             }
-            err = send_message(messageType, messageBody, resp_type, resp_message, csock);
         } else if( resp_type.compare("logout") == 0 ){
-            std::string messageType("logoutresult");
-            std::string messageBody("0");
-            err = send_message(messageType, messageBody, resp_type, resp_message, csock);
+            messageType.assign("logoutresult");
+            messageBody.assign("0");
             username.assign("");
         }    
         // Begin the actual ATM requests involving moneys.
@@ -264,8 +262,7 @@ void* client_thread(void* arg)
             long requestedBalance;
             errID = balance( username, requestedBalance );
             
-            std::string messageType("balanceresult");
-            std::string messageBody;
+            messageType.assign("balanceresult");
             
             if( errID == TRANSACTED ){
                 std::stringstream sBalance;
@@ -275,7 +272,6 @@ void* client_thread(void* arg)
                 messageBody.assign("REQUEST_ERROR");
             else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
                 messageBody.assign("CRITICAL_ERROR");
-            err = send_message( messageType, messageBody, resp_type, resp_message, csock );
         } else if( resp_type.compare("withdraw") == 0 ){
             long withdrawl;
             if ( str2int( withdrawl, resp_message.c_str() ) != SUCCESS ){
@@ -285,8 +281,7 @@ void* client_thread(void* arg)
             long newBalance;
             errID = withdraw( username, withdrawl, newBalance );
             
-            std::string messageType("withdrawresult");
-            std::string messageBody;
+            messageType.assign("withdrawresult");
             
             if( errID == TRANSACTED ){
                 std::stringstream sBalance;
@@ -296,7 +291,6 @@ void* client_thread(void* arg)
                 messageBody.assign("REQUEST_ERROR");
             else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
                 messageBody.assign("CRITICAL_ERROR");
-            err = send_message( messageType, messageBody, resp_type, resp_message, csock );
             
         } else if( resp_type.compare("transfer") == 0 ){
             std::string recipient, amount;
@@ -308,8 +302,7 @@ void* client_thread(void* arg)
             long newBalance;
             errID = transfer( username, recipient, transferAmount, newBalance );
             
-            std::string messageType("transferresult");
-            std::string messageBody;
+            messageType.assign("transferresult");
             
             if( errID == TRANSACTED ){
                 std::stringstream sBalance;
@@ -319,8 +312,8 @@ void* client_thread(void* arg)
                 messageBody.assign("REQUEST_ERROR");
             else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
                 messageBody.assign("CRITICAL_ERROR");
-            err = send_message( messageType, messageBody, resp_type, resp_message, csock );
         }
+        err = send_message( messageType, messageBody, resp_type, resp_message, csock );
     }
 
     printf("[bank] client ID #%d disconnected\n", csock);
