@@ -240,9 +240,10 @@ void* client_thread(void* arg)
 
     while(err == 0)
     {
+        std::cout << resp_type << " " << resp_message << std::endl;
         if( resp_type.compare("getsalt") == 0 ) {
             username = resp_message;
-            std::string messageType("sendsalt");
+            messageType.assign("sendsalt");
             messageBody.assign(random);
         } else if( resp_type.compare("login") == 0 ){
             std::string cornedBeef = hashKey( random, userPIN[username] );
@@ -320,6 +321,7 @@ void* client_thread(void* arg)
             else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
                 messageBody.assign("CRITICAL_ERROR");
         }
+        std::cout << messageType << " " << messageBody << std::endl;
         err = send_message( messageType, messageBody, resp_type, resp_message, csock );
     }
 
