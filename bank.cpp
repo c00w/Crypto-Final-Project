@@ -233,15 +233,10 @@ void* client_thread(void* arg)
     std::string resp_type;
     std::string resp_message;
     err = send_message(empty, empty, resp_type, resp_message, csock); 
-    printf("Returned from 1st recieve\n");
-    if (err != 0) {
-        close(csock);
-        return NULL;
-    }
     
     std::string random = readRand(64);
     std::string username;
-    while(1)
+    while(err != 0)
     {
         if( resp_type.compare("getsalt") == 0 ) {
             username = resp_message;
@@ -283,7 +278,9 @@ void* client_thread(void* arg)
             err = send_message( messageType, messageBody, resp_type, resp_message, csock );
         } else if( resp_type.compare("withdraw") == 0 ){
             long withdrawl;
-            if ( str2int( withdrawl, resp_message.c_str() ) != SUCCESS ) continue;
+            if ( str2int( withdrawl, resp_message.c_str() ) != SUCCESS ){
+                continue;
+            }
         
             long newBalance;
             errID = withdraw( username, withdrawl, newBalance );
