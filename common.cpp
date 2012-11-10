@@ -104,14 +104,42 @@ int send_message(std::string & type, std::string& data, std::string&response_typ
 }
 
 
-std::string prev_nonce("");
+std::string there_nonce("");
 
-int send_nonce(std::string& data_type, std::string& data, std::string& response_type, std::string& response_message, int sock) {
-    if (prev_nonce.length() == 0) {
+int send_nonce(std::string& data, std::string& response, int sock) {
+    std::string my_nonce, new_data;
+    if (there_nonce.length() == 0) {
         //key = establish_key();
         //prev_nonce = 
-        prev_nonce.assign("asdasdasd");
+        there_nonce.assign("asdasdasd");
     }
-    std::string new_nonce(readRand(32));
+    if (data.length() != 0) {
+        my_nonce.assign(readRand(32));
+        new_data.assign(my_nonce);
+        new_data.append("|");
+        new_data.append(there_nonce);
+        new_data.append("|");
+        new_data.append(data);
+    } else {
+       my_nonce.assign(there_nonce);
+       new_data.assign("");
+    }
+    int err = send_socket(new_data, response, sock);
+    if (err != 0) {
+        return err;
+    }
+    std::string params(response);
+    size_t sep_pos = params.find('|');
+    if (sep_pos == params.npos) {
+        return -1;
+    };
+    there_nonce = params.substr(0, sep_pos);
+    params.assign(params.substr(sep_pos, params.length()-sep_pos));
+    sep_pos = params.find('|');
+    std::string sent_my_nonce = params.substr(0, sep_pos);
+    if (my_nonce.compare(sent_my_nonce) != 0) {
+        return -1;
+    }
+    response.assign(params.substr(sep_pos, params.length()-sep_pos));
     return 0;
 }
