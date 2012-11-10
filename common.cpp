@@ -83,44 +83,44 @@ bool compileHashedMessage( std::string plain, std::string key, std::string& comp
 {
     // hash|time|message
     std::string hash, time;
-    
+
     timeval currentTime;
     gettimeofday( &currentTime, NULL );
     double timeNow  = currentTime.tv_sec + ( currentTime.tv_usec / 1000000.0 );
-    
+
     if( applyHMAC( plain, key, hash ) ) return 1;
     time.assign( std::to_string(timeNow) );
-    
+
     compiled.assign(hash);
     compiled.append("|");
     compiled.append(time);
     compiled.append("|");
     compiled.append(plain);
-    
+
     return 0;
 }
 
 bool applyHMAC( std::string plain, std::string stringKey, std::string& hashed ) {
     CryptoPP::SecByteBlock key( (byte*)stringKey.c_str(), stringKey.length() );
-    
+
     std::string encoded, mac;
     encoded.clear();
-    CryptoPP::StringSource( key, key.size(), true, 
+    CryptoPP::StringSource( key, key.size(), true,
                             new CryptoPP::HexEncoder( new CryptoPP::StringSink(encoded) ) );
-    
+
     // Attempt to HMAC.
     try{
         CryptoPP::HMAC<CryptoPP::SHA256> cornedBeef( key, key.size() );
-        CryptoPP::StringSource( plain, true, 
+        CryptoPP::StringSource( plain, true,
                                 new CryptoPP::HashFilter( cornedBeef, new CryptoPP::StringSink(mac) ) );
     } catch( const CryptoPP::Exception& e ) {
         std::cerr << "[8R8K] D::::\n";
         return 1;
     }
-    
+
     encoded.clear();
     CryptoPP::StringSource( mac, true, new CryptoPP::HexEncoder( new CryptoPP::StringSink(encoded) ) );
-    
+
     hashed.assign(encoded);
     return 0;
 }
@@ -142,7 +142,7 @@ bool extractData( std::string fullMessage, std::string stringKey, std::string& d
     hash = fullMessage.substr( 0, pipeLocs[0] );
     time = fullMessage.substr( pipeLocs[0] + 1, pipeLocs[1] );
     message = fullMessage.substr( pipeLocs[1] + 1, fullMessage.length() );
-    
+
     // Verify the integrity
     if( !validHMAC( hash, stringKey, message ) ){
         std::cout << "Invalid hash.";
@@ -155,7 +155,7 @@ bool extractData( std::string fullMessage, std::string stringKey, std::string& d
     double timeThen = atof( time.c_str() );
     if( timeThen > timeNow ) return 1;
     if( timeNow - timeThen > 0.1 ) return 1;
-    
+
     data.assign(message);
     return 0;
 }
@@ -219,7 +219,7 @@ int send_nonce(std::string& data, std::string& response, int sock) {
     std::string my_nonce, new_data;
     if (there_nonce.length() == 0) {
         //key = establish_key();
-        //prev_nonce = 
+        //prev_nonce =
         there_nonce.assign("asdasdasd");
     }
     if (data.length() != 0) {
