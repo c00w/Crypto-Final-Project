@@ -18,6 +18,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <map>
+#include <sstream>
 
 #include "common.h"
 
@@ -30,7 +31,7 @@ pthread_mutex_t userMutex;
 std::map< std::string, std::string > userPIN;
 
 int main(int argc, char* argv[])
-{
+{  
     if(argc != 2)
     {
         printf("Usage: bank listen-port\n");
@@ -93,6 +94,132 @@ int main(int argc, char* argv[])
     }
 }
 
+int balance( std::string& username, long& requestedBalance )
+{
+    if( userBalance.find( username ) == userBalance.end() ){
+        printf( "[bank] Error: nonexistant user\n" );
+        return REQUEST_ERROR;
+    }
+    
+    requestedBalance = userBalance[username];
+    
+	return TRANSACTED;
+}
+
+int deposit( std::string& username, long argument, long& newBalance )
+{
+    // Attempt to acquire a lock.
+    int lock;
+    lock = pthread_mutex_lock( &userMutex );
+    if (lock != 0) {
+        return LOCK_ERROR;
+    }
+    
+    if( userBalance.find( username ) == userBalance.end() ){
+        printf( "[bank] Error: nonexistant user\n" );
+        return REQUEST_ERROR;
+    }
+    if( argument < 0 ){
+        printf( "[bank] Error: cannot deposit negative amounts\n" );
+        return REQUEST_ERROR;
+    }
+    long store1 = userBalance[username];
+    long store2 = store1;
+    if( ( store1 + argument ) < store2 ){
+        printf( "[bank] Error: deposit would cause overflow\n" );
+        return REQUEST_ERROR;
+    }
+    if( argument < 0 ){
+        printf( "[bank] Error: negative deposit amount\n" );
+        return REQUEST_ERROR;
+    }
+    
+    userBalance[username] += argument;
+    newBalance = userBalance[username];
+
+    lock = pthread_mutex_unlock( &userMutex );
+    if (lock != 0) {
+        return UNLOCK_ERROR;
+    }
+    return TRANSACTED;
+}
+
+int withdraw( std::string& username, long argument, long& newBalance )
+{
+    // Attempt to acquire a lock.
+    int lock;
+    lock = pthread_mutex_lock( &userMutex );
+
+    if (lock != 0) {
+        return LOCK_ERROR;
+    }
+
+    if( userBalance.find( username ) == userBalance.end() ){
+        printf( "[bank] Error: nonexistant user\n" );
+        return REQUEST_ERROR;
+    }
+    if( argument < 0 ){
+        printf( "[bank] Error: cannot deposit negative amounts\n" );
+        return REQUEST_ERROR;
+    }
+    if( userBalance[username] < argument ){
+        printf( "[bank] Error: cannot withdraw more than is in account\n" );
+        return REQUEST_ERROR;
+    }
+	
+    userBalance[username] -= argument;
+    newBalance = userBalance[username];
+	    
+	lock = pthread_mutex_unlock( &userMutex );
+    if (lock != 0) {
+        return UNLOCK_ERROR;
+    }
+	return TRANSACTED;
+}
+
+int transfer( std::string& username1, std::string& username2, long argument, long& newBalance )
+{
+    // Attempt to acquire a lock.
+    int lock;
+    lock = pthread_mutex_lock( &userMutex );
+    if (lock != 0) {
+        return LOCK_ERROR;
+    }
+
+    if( userBalance.find( username1 ) == userBalance.end() ){
+        printf( "[bank] Error: nonexistant user 1\n" );
+        return REQUEST_ERROR;
+    }
+    if( userBalance.find( username2 ) == userBalance.end() ){
+        printf( "[bank] Error: nonexistant user 2\n" );
+        return REQUEST_ERROR;
+    }
+    if( argument < 0 ){
+        printf( "[bank] Error: negative transfer amount\n" );
+        return REQUEST_ERROR;
+    }
+    if( argument > userBalance[username1] ){
+        printf( "[bank] Error: transfer exceeds host user's balance\n" );
+        return REQUEST_ERROR;
+    }
+    long store1 = userBalance[username2];
+    long store2 = store1;
+    if( ( store1 + argument ) < store2 ){
+        printf( "[bank] Error: deposit would cause overflow\n" );
+        return REQUEST_ERROR;
+    }
+    
+    userBalance[username1] -= argument;
+    userBalance[username2] += argument;
+    newBalance = userBalance[username1];
+              
+    lock = pthread_mutex_unlock( &userMutex );
+    if (lock != 0) {
+        return UNLOCK_ERROR;
+    }
+    return TRANSACTED;
+}
+
 void* client_thread(void* arg)
 {
     int csock = (int)arg;
@@ -100,7 +227,7 @@ void* client_thread(void* arg)
     printf("[bank] client ID #%d connected\n", csock);
     
     //input loop
-    int err;
+    int err, errID;
     
     std::string empty("");
     std::string resp_type;
@@ -116,13 +243,11 @@ void* client_thread(void* arg)
     std::string username;
     while(1)
     {
-        std::cout << resp_type;
-        if (resp_type.compare("getsalt") == 0) {
+        if( resp_type.compare("getsalt") == 0 ) {
             username = resp_message;
             std::string messageType("sendsalt");
             err = send_message(messageType, random, resp_type, resp_message, csock);
-        }
-        else if(resp_type.compare("login") == 0){
+        } else if( resp_type.compare("login") == 0 ){
             std::string cornedBeef = hashKey( random, userPIN[username] );
             std::string messageType("loginresult");
             std::string messageBody;
@@ -133,6 +258,71 @@ void* client_thread(void* arg)
             else
                 messageBody.assign("1");
             err = send_message(messageType, messageBody, resp_type, resp_message, csock);
+        } else if( resp_type.compare("logout") == 0 ){
+            std::string messageType("logoutresult");
+            std::string messageBody("0");
+            err = send_message(messageType, messageBody, resp_type, resp_message, csock);
+            username.assign("");
+        }    
+        // Begin the actual ATM requests involving moneys.
+        else if( resp_type.compare("balance") == 0 ){
+            long requestedBalance;
+            errID = balance( username, requestedBalance );
+            
+            std::string messageType("balanceresult");
+            std::string messageBody;
+            
+            if( errID == TRANSACTED ){
+                std::stringstream sBalance;
+                sBalance << requestedBalance;
+                messageBody.assign(sBalance.str());
+            } else if( errID == REQUEST_ERROR )
+                messageBody.assign("REQUEST_ERROR");
+            else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
+                messageBody.assign("CRITICAL_ERROR");
+            err = send_message( messageType, messageBody, resp_type, resp_message, csock );
+        } else if( resp_type.compare("withdraw") == 0 ){
+            long withdrawl;
+            if ( str2int( withdrawl, resp_message.c_str() ) != SUCCESS ) continue;
+        
+            long newBalance;
+            errID = withdraw( username, withdrawl, newBalance );
+            
+            std::string messageType("withdrawresult");
+            std::string messageBody;
+            
+            if( errID == TRANSACTED ){
+                std::stringstream sBalance;
+                sBalance << newBalance;
+                messageBody.assign(sBalance.str());
+            } else if( errID == REQUEST_ERROR )
+                messageBody.assign("REQUEST_ERROR");
+            else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
+                messageBody.assign("CRITICAL_ERROR");
+            err = send_message( messageType, messageBody, resp_type, resp_message, csock );
+            
+        } else if( resp_type.compare("transfer") == 0 ){
+            std::string recipient, amount;
+            recipient = resp_message.substr( 0, (int)resp_message.find("|") );
+            amount    = resp_message.substr( (int)resp_message.find("|") + 1, resp_message.length() );
+            long transferAmount;
+            if( str2int( transferAmount, amount.c_str() ) != SUCCESS ) continue;
+            
+            long newBalance;
+            errID = transfer( username, recipient, transferAmount, newBalance );
+            
+            std::string messageType("transferresult");
+            std::string messageBody;
+            
+            if( errID == TRANSACTED ){
+                std::stringstream sBalance;
+                sBalance << newBalance;
+                messageBody.assign(sBalance.str());
+            } else if( errID == REQUEST_ERROR )
+                messageBody.assign("REQUEST_ERROR");
+            else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
+                messageBody.assign("CRITICAL_ERROR");
+            err = send_message( messageType, messageBody, resp_type, resp_message, csock );
         }
     }
 
@@ -142,132 +332,11 @@ void* client_thread(void* arg)
     return NULL;
 }
 
-bool balance( std::string& username )
-{
-    if( userBalance.find( username ) == userBalance.end() ){
-        printf( "[bank] Error: nonexistant user\n" );
-        return 1;
-    }
-    
-	std::cout << "[bank] User " << username << " has $" << userBalance[username] << std::endl;
-	return 0;
-}
-
-bool deposit( std::string& username, long argument )
-{
-    // Attempt to acquire a lock.
-    int lock;
-    lock = pthread_mutex_lock( &userMutex );
-    if (lock != 0) {
-        return 1;
-    }
-    
-    if( userBalance.find( username ) == userBalance.end() ){
-        printf( "[bank] Error: nonexistant user\n" );
-        return 1;
-    }
-    long store1 = userBalance[username];
-    long store2 = store1;
-    if( ( store1 + argument ) < store2 ){
-        printf( "[bank] Error: deposit would cause overflow\n" );
-        return 1;
-    }
-    if( argument < 0 ){
-        printf( "[bank] Error: negative deposit amount\n" );
-        return 1;
-    }
-        
-    else
-    {
-        // Success
-        userBalance[username] += argument;
-        std::cout << "[bank] User " << username << " deposited $" << argument << std::endl;
-    }
-
-    lock = pthread_mutex_unlock( &userMutex );
-    if (lock != 0) {
-        return 1;
-    }
-    return 0;
-}
-
-bool withdraw( std::string& username, long argument )
-{
-    // Attempt to acquire a lock.
-    int lock;
-    lock = pthread_mutex_lock( &userMutex );
-
-    if (lock != 0) {
-        return 1;
-    }
-
-    if( userBalance.find( username ) == userBalance.end() ){
-        printf( "[bank] Error: nonexistant user\n" );
-        return 1;
-    }
-    if( argument < 0 ){
-        printf( "[bank] Error: negative withdrawl amount\n" );
-        return 1;
-    }
-	
-    userBalance[username] -= argument;
-    std::cout << "[bank] User " << username << " withdrew $" << argument << std::endl;
-	    
-	lock = pthread_mutex_unlock( &userMutex );
-    if (lock != 0) {
-        return 1;
-    }
-	return 0;
-}
-
-bool transfer( std::string& username1, std::string& username2, long argument )
-{
-    // Attempt to acquire a lock.
-    int lock;
-    lock = pthread_mutex_lock( &userMutex );
-    if (lock != 0) {
-        return 1;
-    }
-
-    if( userBalance.find( username1 ) == userBalance.end() ){
-        printf( "[bank] Error: nonexistant user 1\n" );
-        return 1;
-    }
-    if( userBalance.find( username2 ) == userBalance.end() ){
-        printf( "[bank] Error: nonexistant user 2\n" );
-        return 1;
-    }
-    if( argument < 0 ){
-        printf( "[bank] Error: negative transfer amount\n" );
-        return 1;
-    }
-    if( argument > userBalance[username1] ){
-        printf( "[bank] Error: transfer exceeds host user's balance\n" );
-        return 1;
-    }
-    long store1 = userBalance[username2];
-    long store2 = store1;
-    if( ( store1 + argument ) < store2 ){
-        printf( "[bank] Error: deposit would cause overflow\n" );
-        return 1;
-    }
-    
-    userBalance[username1] -= argument;
-    userBalance[username2] += argument;
-    
-    std::cout << "[bank] User " << username1 << " transferred $" << argument
-              << " to " << username2 << std::endl;
-              
-    lock = pthread_mutex_unlock( &userMutex );
-    if (lock != 0) {
-        return 1;
-    }
-    return 0;
-}
-
 void* console_thread(void* arg)
 {
     char buf[80];
+    int errID;
+    
     while(1)
     {
         printf("bank> ");
@@ -301,14 +370,30 @@ void* console_thread(void* arg)
             }
             //std::cout << username << std::endl <<  balance << std::endl;
             
-            deposit( username, balance );
+            long newBalance;
+            errID = deposit( username, balance, newBalance );
+            if( errID == TRANSACTED )
+                std::cout << "[bank] " << username << " deposited $" << balance 
+                          << ", new balance $" << newBalance << std::endl;
+            else if( errID == REQUEST_ERROR )
+                std::cout << "[bank] Request failed.\n";
+            else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
+                std::cout << "[bank] Critical failure.\n";
 
         //Handle balance
         } else if (input.substr(0,7).compare("balance") == 0) {
             std::string username = input.substr(8, input.length()-8);
             //std:: cout << username << std::endl;
             
-            balance( username );
+            long requestedBalance;
+            errID = balance( username, requestedBalance );
+            if( errID == TRANSACTED )
+                std::cout << "[bank] " << username << " has a balance of $" 
+                          << requestedBalance << std::endl;
+            else if( errID == REQUEST_ERROR )
+                std::cout << "[bank] Request failed.\n";
+            else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
+                std::cout << "[bank] Critical failure.\n";
         }
     }
     return NULL;

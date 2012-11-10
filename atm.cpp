@@ -26,7 +26,7 @@ void error() {
 }
 
 int handle_input(std::string & input, int sock) {
-    if (input.length() <= 6) {
+    if (input.length() < 6) {
         return 1;
     }
 
@@ -91,22 +91,31 @@ int handle_input(std::string & input, int sock) {
     if (input.substr(0,6).compare("logout") == 0) {
        std::string msg_type("logout"), msg_data(""), resp_type, resp_data;
        int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
-       if (err != 0 || resp_type.compare("logout") != 0) {
+       if( err != 0 || resp_type.compare("logoutresult") != 0 ) {
             return 1;
        }
-       if (resp_data.compare("0")) {
+       if( resp_data.compare("0") == 0 ) {
             std::cout << "Logged out" << std::endl;
             User.assign("");
        }
-    } else if (input.substr(0, 7).compare("balance") == 0) {
+    } else if (input.substr(0,7).compare("balance") == 0) {
         std::string msg_type("balance"), msg_data(""), resp_type, resp_data;
         int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
         if (err != 0 || resp_type.compare("balanceresult") != 0) {
             return 1;
         }
-        std::cout << "Balance: " << resp_data << std::endl;
-    } else if (input.substr(0,8).compare("transfer")) {
-        if (input.length() <9) {
+        if( resp_data.compare("REQUEST_ERROR") == 0 ){
+            std::cout << "Invalid request.\n";
+            return 0;
+        } else if( resp_data.compare("CRITICAL_ERROR") == 0 ){
+            std::cout << "Critical error.\n";
+            return 1;
+        }
+        
+        std::cout << "User has a balance of $" << resp_data << std::endl;
+        
+    } else if (input.substr(0,8).compare("transfer") == 0) {
+        if (input.length() < 9) {
             return 1;
         }
         std::string params = input.substr(9, input.length() -9);
@@ -125,24 +134,39 @@ int handle_input(std::string & input, int sock) {
         if (err != 0 || resp_type.compare("transferresult") != 0) {
             return 1;
         }
-        
-        if (resp_data.compare("0") == 0){
-            std::cout << "Transferred" << std::endl;
-        }
-    } else if (input.substr(0, 8).compare("withdraw")==0) {
-        if (input.length() <9) {
+
+        if( resp_data.compare("REQUEST_ERROR") == 0 ){
+            std::cout << "Invalid request.\n";
+            return 1;
+        } else if( resp_data.compare("CRITICAL_ERROR") == 0 ){
+            std::cout << "Critical error.\n";
             return 1;
         }
-        std::string amount = input.substr(9, input.length() -9);
+        
+        std::cout << "User transferred $" << username.substr(1,username.length()) << " to " << amount
+                  << ", leaving a final balance of $" << resp_data << std::endl;
+        
+    } else if (input.substr(0,8).compare("withdraw") == 0) {
+        if (input.length() < 9) {
+            return 1;
+        }
+        std::string amount = input.substr(9, input.length()-9);
         std::string msg_type("withdraw"), msg_data(amount), resp_type, resp_data;
         int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
         if (err != 0 || resp_type.compare("withdrawresult") != 0) {
             return 1;
         }
 
-        if (resp_data.compare("0") == 0) {
-            std::cout << amount << " withdrawn" << std::endl;
+        if( resp_data.compare("REQUEST_ERROR") == 0 ){
+            std::cout << "Invalid request.\n";
+            return 1;
+        } else if( resp_data.compare("CRITICAL_ERROR") == 0 ){
+            std::cout << "Critical error.\n";
+            return 1;
         }
+        
+        std::cout << "User withdrew $" << amount << ", new balance $" << resp_data << std::endl;
+        
     } else {
         return 1;
     }

@@ -8,6 +8,7 @@
 #include <string.h>
 #include <errno.h>
 #include <limits.h>
+#include <iostream>
 
 #include <string>
 
@@ -15,6 +16,8 @@
 
 enum STR2INT_ERROR { SUCCESS, OVERFLOW, UNDERFLOW, INCONVERTIBLE };
 STR2INT_ERROR str2int (long &i, char const *s);
+
+enum TRANSACTION_RESULT { TRANSACTED, REQUEST_ERROR, LOCK_ERROR, UNLOCK_ERROR };
 
 std::string readRand( int desiredBytes );
 
