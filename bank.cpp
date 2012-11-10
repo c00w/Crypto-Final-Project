@@ -97,7 +97,7 @@ int main(int argc, char* argv[])
 int balance( std::string& username, long& requestedBalance )
 {
     if( userBalance.find( username ) == userBalance.end() ){
-        printf( "[bank] Error: nonexistant user\n" );
+        printf( "[bank] Error: nonexistant user.\n" );
         return REQUEST_ERROR;
     }
 
@@ -116,21 +116,21 @@ int deposit( std::string& username, long argument, long& newBalance )
     }
 
     if( userBalance.find( username ) == userBalance.end() ){
-        printf( "[bank] Error: nonexistant user\n" );
+        printf( "[bank] Error: nonexistant user.\n" );
         return REQUEST_ERROR;
     }
     if( argument < 0 ){
-        printf( "[bank] Error: cannot deposit negative amounts\n" );
+        printf( "[bank] Error: cannot deposit negative amounts.\n" );
         return REQUEST_ERROR;
     }
     long store1 = userBalance[username];
     long store2 = store1;
     if( ( store1 + argument ) < store2 ){
-        printf( "[bank] Error: deposit would cause overflow\n" );
+        printf( "[bank] Error: deposit would cause overflow.\n" );
         return REQUEST_ERROR;
     }
     if( argument < 0 ){
-        printf( "[bank] Error: negative deposit amount\n" );
+        printf( "[bank] Error: negative deposit amount.\n" );
         return REQUEST_ERROR;
     }
 
@@ -155,15 +155,15 @@ int withdraw( std::string& username, long argument, long& newBalance )
     }
 
     if( userBalance.find( username ) == userBalance.end() ){
-        printf( "[bank] Error: nonexistant user\n" );
+        printf( "[bank] Error: nonexistant user.\n" );
         return REQUEST_ERROR;
     }
     if( argument < 0 ){
-        printf( "[bank] Error: cannot deposit negative amounts\n" );
+        printf( "[bank] Error: cannot deposit negative amounts.\n" );
         return REQUEST_ERROR;
     }
     if( userBalance[username] < argument ){
-        printf( "[bank] Error: cannot withdraw more than is in account\n" );
+        printf( "[bank] Error: cannot withdraw more than is in account.\n" );
         return REQUEST_ERROR;
     }
 
@@ -187,25 +187,25 @@ int transfer( std::string& username1, std::string& username2, long argument, lon
     }
 
     if( userBalance.find( username1 ) == userBalance.end() ){
-        printf( "[bank] Error: nonexistant user 1\n" );
+        printf( "[bank] Error: nonexistant user 1.\n" );
         return REQUEST_ERROR;
     }
     if( userBalance.find( username2 ) == userBalance.end() ){
-        printf( "[bank] Error: nonexistant user 2\n" );
+        printf( "[bank] Error: nonexistant user 2.\n" );
         return REQUEST_ERROR;
     }
     if( argument < 0 ){
-        printf( "[bank] Error: negative transfer amount\n" );
+        printf( "[bank] Error: negative transfer amount.\n" );
         return REQUEST_ERROR;
     }
     if( argument > userBalance[username1] ){
-        printf( "[bank] Error: transfer exceeds host user's balance\n" );
+        printf( "[bank] Error: transfer exceeds host user's balance.\n" );
         return REQUEST_ERROR;
     }
     long store1 = userBalance[username2];
     long store2 = store1;
     if( ( store1 + argument ) < store2 ){
-        printf( "[bank] Error: deposit would cause overflow\n" );
+        printf( "[bank] Error: deposit would cause overflow.\n" );
         return REQUEST_ERROR;
     }
 
