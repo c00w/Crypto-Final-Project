@@ -30,7 +30,7 @@ std::string hashKey( std::string salt, std::string PIN )
 
     std::string hashedKey;
     hashedKey.assign( pin_hash_buff, 64 );
-    
+
     return hashedKey;
 }
 
@@ -40,7 +40,7 @@ std::string readRand( int desiredBytes )
     char buffer[desiredBytes];
     fgets(buffer, desiredBytes, file);
     fclose(file);
-    
+
     std::string randomString;
     randomString.assign(buffer, desiredBytes);
     return randomString;
@@ -55,29 +55,24 @@ int send_socket(std::string& data, std::string& recieved, int sock) {
     //send the packet through the proxy to the bank
     if(length != 0 && sizeof(int) != send(sock, &length, sizeof(int), 0))
     {
-        printf("fail to send packet length\n");
         return -1;
     }
     if(length != 0 && (int)length != send(sock, (void*)packet, length, 0))
     {
-        printf("fail to send packet\n");
         return -1;
     }
-    
+
     //TODO: do something with response packet
     if(sizeof(int) != recv(sock, &length, sizeof(int), 0))
     {
-        printf("fail to read packet length\n");
         return -1;
     }
     if(length >= 1024 || length <= 0)
     {
-        printf("packet too long\n");
         return -1;
     }
     if((int)length != recv(sock, recvpacket, length, 0))
     {
-        printf("fail to read packet\n");
         return -1;
     }
     recieved.assign(recvpacket, length);
@@ -95,7 +90,7 @@ int send_message(std::string & type, std::string& data, std::string&response_typ
 
     //Send it and get response
     std::string response;
-    int err = send_socket(message, response, sock);    
+    int err = send_socket(message, response, sock);
     if (err != 0) {
         printf("error1\n");
         return err;
@@ -105,7 +100,18 @@ int send_message(std::string & type, std::string& data, std::string&response_typ
         printf("error2\n");
         return -1;
     }
-    response_type = response.substr(0, sep_pos); 
+    response_type = response.substr(0, sep_pos);
     response_message = response.substr(sep_pos+1, response.length() - sep_pos);
+    return 0;
+}
+
+
+std::string prev_nonce("");
+
+int send_nonce(std::string& data_type, std::string& data, std::string& response_type, std::string& response_message, int sock) {
+    if (prev_nonce.length() == 0) {
+        //key = establish_key();
+        //prev_nonce = 
+    }
     return 0;
 }

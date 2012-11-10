@@ -121,12 +121,12 @@ int handle_input(std::string & input, int sock) {
         if (space_index == params.npos) {
             return 1;
         }
-        std::string amount = params.substr(0, space_index);
-        std::string username = params.substr(space_index, params.length()-space_index);
+        std::string username = params.substr(0, space_index);
+        std::string amount = params.substr(space_index, params.length()-space_index);
 
-        std::string msg_type("transfer"), msg_data(amount), resp_type, resp_data; 
+        std::string msg_type("transfer"), msg_data(username), resp_type, resp_data; 
         msg_data.append("|");
-        msg_data.append(username);
+        msg_data.append(amount);
         int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
         if (err != 0 || resp_type.compare("transferresult") != 0) {
             return 1;
