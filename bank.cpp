@@ -224,7 +224,8 @@ void* client_thread(void* arg)
 {
     int csock = (int)arg;
     
-    printf("\n[bank] client ID #%d connected\n>bank>", csock);
+    std::cout << "\n[bank] Client ID #" << csock << " connected.\n>bank>";
+    std::cout.flush();
     
     //input loop
     int err, errID;
@@ -322,8 +323,9 @@ void* client_thread(void* arg)
         err = send_message( messageType, messageBody, resp_type, resp_message, csock );
     }
 
-    printf("\n[bank] client ID #%d disconnected\n>bank>", csock);
-
+    std::cout << "\n[bank] Client ID #" << csock << " disconnected.\n>bank>";
+    std::cout.flush();
+    
     close(csock);
     return NULL;
 }
