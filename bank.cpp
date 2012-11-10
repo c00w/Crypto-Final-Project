@@ -223,9 +223,6 @@ int transfer( std::string& username1, std::string& username2, long argument, lon
 void* client_thread(void* arg)
 {
     int csock = (int)arg;
-
-    printf("[bank] client ID #%d connected\n", csock);
-
     //input loop
     int err, errID;
 
@@ -273,16 +270,18 @@ void* client_thread(void* arg)
             else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
                 messageBody.assign("CRITICAL_ERROR");
         } else if( resp_type.compare("withdraw") == 0 ){
+            messageType.assign("withdrawresult");
+            
             long withdrawl;
             if ( str2int( withdrawl, resp_message.c_str() ) != SUCCESS ){
+                messageBody.assign("REQUEST_ERROR");
+                err = send_message( messageType, messageBody, resp_type, resp_message, csock );
                 continue;
             }
-
+            
             long newBalance;
             errID = withdraw( username, withdrawl, newBalance );
-
-            messageType.assign("withdrawresult");
-
+            
             if( errID == TRANSACTED ){
                 std::stringstream sBalance;
                 sBalance << newBalance;
@@ -293,17 +292,21 @@ void* client_thread(void* arg)
                 messageBody.assign("CRITICAL_ERROR");
 
         } else if( resp_type.compare("transfer") == 0 ){
+            messageType.assign("transferresult");
+            
             std::string recipient, amount;
             recipient = resp_message.substr( 0, (int)resp_message.find("|") );
             amount    = resp_message.substr( (int)resp_message.find("|") + 1, resp_message.length() );
             long transferAmount;
-            if( str2int( transferAmount, amount.c_str() ) != SUCCESS ) continue;
-
+            if ( str2int( transferAmount, amount.c_str() ) != SUCCESS ){
+                messageBody.assign("REQUEST_ERROR");
+                err = send_message( messageType, messageBody, resp_type, resp_message, csock );
+                continue;
+            }
+            
             long newBalance;
             errID = transfer( username, recipient, transferAmount, newBalance );
-
-            messageType.assign("transferresult");
-
+            
             if( errID == TRANSACTED ){
                 std::stringstream sBalance;
                 sBalance << newBalance;
@@ -316,7 +319,7 @@ void* client_thread(void* arg)
         err = send_message( messageType, messageBody, resp_type, resp_message, csock );
     }
 
-    printf("[bank] client ID #%d disconnected\n", csock);
+    printf("\n[bank] client ID #%d disconnected\n>bank>", csock);
 
     close(csock);
     return NULL;
@@ -329,7 +332,7 @@ void* console_thread(void* arg)
 
     while(1)
     {
-        printf("bank> ");
+        printf(">bank> ");
         fgets(buf, 79, stdin);
         buf[strlen(buf)-1] = '\0';  //trim off trailing newline
 
@@ -363,8 +366,8 @@ void* console_thread(void* arg)
             long newBalance;
             errID = deposit( username, balance, newBalance );
             if( errID == TRANSACTED )
-                std::cout << "[bank] " << username << " deposited $" << balance
-                          << ", new balance $" << newBalance << std::endl;
+                std::cout << "[bank] " << username << " deposited $" << balance 
+                          << ", new balance $" << newBalance << "." << std::endl;
             else if( errID == REQUEST_ERROR )
                 std::cout << "[bank] Request failed.\n";
             else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
@@ -378,8 +381,8 @@ void* console_thread(void* arg)
             long requestedBalance;
             errID = balance( username, requestedBalance );
             if( errID == TRANSACTED )
-                std::cout << "[bank] " << username << " has a balance of $"
-                          << requestedBalance << std::endl;
+                std::cout << "[bank] " << username << " has a balance of $" 
+                          << requestedBalance << "." << std::endl;
             else if( errID == REQUEST_ERROR )
                 std::cout << "[bank] Request failed.\n";
             else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
