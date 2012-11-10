@@ -13,6 +13,8 @@
 #include <string>
 
 #include "cryptopp/sha.h"
+#include "cryptopp/modes.h"
+#include "cryptopp/aes.h"
 
 enum STR2INT_ERROR { SUCCESS, OVERFLOW, UNDERFLOW, INCONVERTIBLE };
 STR2INT_ERROR str2int (long &i, char const *s);
