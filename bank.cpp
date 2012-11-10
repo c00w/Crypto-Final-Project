@@ -235,6 +235,7 @@ void* client_thread(void* arg)
     std::string resp_message;
     std::string messageBody(""), messageType("");
     std::string random = readRand(64);
+    std::string sent_salt;
     std::string username;
     err = send_message(messageBody, messageType, resp_type, resp_message, csock);
 
@@ -245,8 +246,10 @@ void* client_thread(void* arg)
             username = resp_message;
             messageType.assign("sendsalt");
             messageBody.assign(random);
+            sent_salt.assign(random);
+            random = readRand(64);
         } else if( resp_type.compare("login") == 0 ){
-            std::string cornedBeef = hashKey( random, userPIN[username] );
+            std::string cornedBeef = hashKey( sent_salt, userPIN[username] );
             messageType.assign("loginresult");
             if(resp_message.compare(cornedBeef) == 0)
                 messageBody.assign("0");
