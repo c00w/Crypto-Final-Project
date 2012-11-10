@@ -79,11 +79,29 @@ int send_socket(std::string& data, std::string& recieved, int sock) {
     return 0;
 }
 
-void applyHMAC( std::string plain, std::string stringKey )
+bool compileHashedMessage( std::string plain, std::string key, std::string& compiled )
 {
-    std::cout << "key:    " << stringKey << std::endl;
-    std::cout << "string: " << plain << std::endl;
+    // hash|time|message
+    std::string hash, time;
     
+    timeval currentTime;
+    gettimeofday( &currentTime, NULL );
+    double timeNow  = currentTime.tv_sec + ( currentTime.tv_usec / 1000000.0 );
+    if(timeNow == 0) std::cout << "eh";
+    
+    if( applyHMAC( plain, key, hash ) ) return 1;
+    time.assign( "1827498187.89124" );
+    
+    compiled.assign(hash);
+    compiled.append("|");
+    compiled.append(time);
+    compiled.append("|");
+    compiled.append(plain);
+    
+    return 0;
+}
+
+bool applyHMAC( std::string plain, std::string stringKey, std::string& hashed ) {
     CryptoPP::SecByteBlock key( (byte*)stringKey.c_str(), stringKey.length() );
     
     std::string encoded, mac;
@@ -98,12 +116,49 @@ void applyHMAC( std::string plain, std::string stringKey )
                                 new CryptoPP::HashFilter( cornedBeef, new CryptoPP::StringSink(mac) ) );
     } catch( const CryptoPP::Exception& e ) {
         std::cerr << "[8R8K] D::::\n";
-        return;
+        return 1;
     }
     
     encoded.clear();
     CryptoPP::StringSource( mac, true, new CryptoPP::HexEncoder( new CryptoPP::StringSink(encoded) ) );
-    std::cout << "HMAC:   " << encoded << std::endl;
+    
+    hashed.assign(encoded);
+    return 0;
+}
+
+bool validHMAC( std::string hash, std::string stringKey, std::string plain ) {
+    std::string attemptedHash;
+    if( applyHMAC( plain, stringKey, attemptedHash ) ) return 0;
+    if( hash.compare(attemptedHash) == 0 ) return 1;
+    return 0;
+}
+
+bool extractData( std::string fullMessage, std::string stringKey, std::string& data )
+{
+    // hash|time|message
+    std::string hash, time, message;
+    int pipeLocs[2];
+    pipeLocs[0] = (int)fullMessage.find("|");
+    pipeLocs[1] = (int)fullMessage.find( "|", pipeLocs[0]+1 );
+    hash = fullMessage.substr( 0, pipeLocs[0] );
+    time = fullMessage.substr( pipeLocs[0] + 1, pipeLocs[1] );
+    message = fullMessage.substr( pipeLocs[1] + 1, fullMessage.length() );
+    
+    // Verify the integrity
+    if( !validHMAC( hash, stringKey, message ) ){
+        std::cout << "Invalid hash.";
+        return 1;
+    }
+    // Verify that the timestamp is reasonable.
+    timeval currentTime;
+    gettimeofday( &currentTime, NULL );
+    /*double timeNow  = currentTime.tv_sec + ( currentTime.tv_usec / 1000000.0 );
+    double timeThen = atof( time.c_str() );
+    if( timeThen > timeNow ) return 1;
+    if( timeNow - timeThen > 0.1 ) return 1;*/
+    
+    data.assign(message);
+    return 0;
 }
 
 int send_message(std::string & type, std::string& data, std::string&response_type, std::string& response_message, int sock){
@@ -200,7 +255,4 @@ int send_nonce(std::string& data, std::string& response, int sock) {
 }
 
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 43c56d88d7eacf8ee4e2e1ea140ea74a9359ac5e

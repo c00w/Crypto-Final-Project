@@ -33,7 +33,13 @@ std::map< std::string, std::string > userAccount;
 
 int main(int argc, char* argv[])
 {
-    applyHMAC( "killed by br8k spider!!!!!!!!", "1234567890123456" );
+    std::string fullMessage;
+    if( compileHashedMessage( "br8k spider!!!!!!!!", "1234567890123456", fullMessage ) ) return 1;
+    std::cout << fullMessage << std::endl;
+    std::string message;
+    if( extractData( fullMessage, "1234567890123456", message ) ) return 1;
+    std::cout << "Extracted: " << message << std::endl;
+    
     return 0;
 
     if(argc != 2)

@@ -11,6 +11,7 @@
 #include <iostream>
 
 #include <string>
+#include <sys/time.h>
 
 #include "cryptopp/cryptlib.h"
 #include "cryptopp/filters.h"
@@ -25,7 +26,10 @@ STR2INT_ERROR str2int (long &i, char const *s);
 
 enum TRANSACTION_RESULT { TRANSACTED, REQUEST_ERROR, LOCK_ERROR, UNLOCK_ERROR };
 
-void applyHMAC( std::string plain, std::string key );
+bool applyHMAC( std::string plain, std::string stringKey, std::string& hashed );
+bool validHMAC( std::string hash, std::string stringKey, std::string plain );
+bool extractData( std::string fullMessage, std::string stringKey, std::string& data );
+bool compileHashedMessage( std::string plain, std::string key, std::string& compiled );
 
 std::string readRand( int desiredBytes );
 
