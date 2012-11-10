@@ -282,14 +282,18 @@ void* client_thread(void* arg)
                 messageBody.assign("CRITICAL_ERROR");
             err = send_message( messageType, messageBody, resp_type, resp_message, csock );
         } else if( resp_type.compare("withdraw") == 0 ){
-            long withdrawl;
-            if ( str2int( withdrawl, resp_message.c_str() ) != SUCCESS ) continue;
-        
-            long newBalance;
-            errID = withdraw( username, withdrawl, newBalance );
-            
             std::string messageType("withdrawresult");
             std::string messageBody;
+            
+            long withdrawl;
+            if ( str2int( withdrawl, resp_message.c_str() ) != SUCCESS ){
+                messageBody.assign("REQUEST_ERROR");
+                err = send_message( messageType, messageBody, resp_type, resp_message, csock );
+                continue;
+            }
+                
+            long newBalance;
+            errID = withdraw( username, withdrawl, newBalance );
             
             if( errID == TRANSACTED ){
                 std::stringstream sBalance;
@@ -302,17 +306,21 @@ void* client_thread(void* arg)
             err = send_message( messageType, messageBody, resp_type, resp_message, csock );
             
         } else if( resp_type.compare("transfer") == 0 ){
+            std::string messageType("transferresult");
+            std::string messageBody;
+            
             std::string recipient, amount;
             recipient = resp_message.substr( 0, (int)resp_message.find("|") );
             amount    = resp_message.substr( (int)resp_message.find("|") + 1, resp_message.length() );
             long transferAmount;
-            if( str2int( transferAmount, amount.c_str() ) != SUCCESS ) continue;
+            if ( str2int( transferAmount, amount.c_str() ) != SUCCESS ){
+                messageBody.assign("REQUEST_ERROR");
+                err = send_message( messageType, messageBody, resp_type, resp_message, csock );
+                continue;
+            }
             
             long newBalance;
             errID = transfer( username, recipient, transferAmount, newBalance );
-            
-            std::string messageType("transferresult");
-            std::string messageBody;
             
             if( errID == TRANSACTED ){
                 std::stringstream sBalance;
