@@ -92,12 +92,10 @@ int send_message(std::string & type, std::string& data, std::string&response_typ
     std::string response;
     int err = send_socket(message, response, sock);
     if (err != 0) {
-        printf("error1\n");
         return err;
     }
     size_t sep_pos = response.find('|');
     if (sep_pos == response.npos ){
-        printf("error2\n");
         return -1;
     }
     response_type = response.substr(0, sep_pos);
@@ -112,6 +110,8 @@ int send_nonce(std::string& data_type, std::string& data, std::string& response_
     if (prev_nonce.length() == 0) {
         //key = establish_key();
         //prev_nonce = 
+        prev_nonce.assign("asdasdasd");
     }
+    std::string new_nonce(readRand(32));
     return 0;
 }
