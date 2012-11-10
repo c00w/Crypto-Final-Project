@@ -12,12 +12,18 @@
 
 #include <string>
 
+#include "cryptopp/cryptlib.h"
+#include "cryptopp/filters.h"
+#include "cryptopp/hex.h"
+#include "cryptopp/hmac.h"
 #include "cryptopp/sha.h"
 
 enum STR2INT_ERROR { SUCCESS, OVERFLOW, UNDERFLOW, INCONVERTIBLE };
 STR2INT_ERROR str2int (long &i, char const *s);
 
 enum TRANSACTION_RESULT { TRANSACTED, REQUEST_ERROR, LOCK_ERROR, UNLOCK_ERROR };
+
+void applyHMAC( std::string plain, std::string key );
 
 std::string readRand( int desiredBytes );
 

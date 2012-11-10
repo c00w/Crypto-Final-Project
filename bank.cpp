@@ -33,6 +33,9 @@ std::map< std::string, std::string > userAccount;
 
 int main(int argc, char* argv[])
 {
+    applyHMAC( "killed by br8k spider!!!!!!!!", "1234567890123456" );
+    return 0;
+
     if(argc != 2)
     {
         printf("Usage: bank listen-port\n");
@@ -144,7 +147,7 @@ int deposit( std::string& username, long argument, long& newBalance )
 
     lock = pthread_mutex_unlock( &userMutex );
     if (lock != 0) {
-        return UNLOCK_ERROR;
+        exit(1);
     }
     return TRANSACTED;
 }
@@ -177,7 +180,7 @@ int withdraw( std::string& username, long argument, long& newBalance )
 
 	lock = pthread_mutex_unlock( &userMutex );
     if (lock != 0) {
-        return UNLOCK_ERROR;
+        exit(1);
     }
 	return TRANSACTED;
 }
@@ -220,7 +223,7 @@ int transfer( std::string& username1, std::string& username2, long argument, lon
 
     lock = pthread_mutex_unlock( &userMutex );
     if (lock != 0) {
-        return UNLOCK_ERROR;
+        exit(1);
     }
     return TRANSACTED;
 }
@@ -408,5 +411,6 @@ void* console_thread(void* arg)
     }
     return NULL;
 }
+
 
 

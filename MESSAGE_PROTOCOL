@@ -26,7 +26,3 @@ withdraw|amount
     Sent by atm. Requests a transfer from the bank.
 withdrawresult|amount
     Sent by bank. Amount is the string format of their new balance in dollars, or an error code
-    
-notes:
-    force killing an ATM crashes the bank (appears to try to resend last request?)
-    remove some more debug code

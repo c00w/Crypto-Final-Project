@@ -79,6 +79,33 @@ int send_socket(std::string& data, std::string& recieved, int sock) {
     return 0;
 }
 
+void applyHMAC( std::string plain, std::string stringKey )
+{
+    std::cout << "key:    " << stringKey << std::endl;
+    std::cout << "string: " << plain << std::endl;
+    
+    CryptoPP::SecByteBlock key( (byte*)stringKey.c_str(), stringKey.length() );
+    
+    std::string encoded, mac;
+    encoded.clear();
+    CryptoPP::StringSource( key, key.size(), true, 
+                            new CryptoPP::HexEncoder( new CryptoPP::StringSink(encoded) ) );
+    
+    // Attempt to HMAC.
+    try{
+        CryptoPP::HMAC<CryptoPP::SHA256> cornedBeef( key, key.size() );
+        CryptoPP::StringSource( plain, true, 
+                                new CryptoPP::HashFilter( cornedBeef, new CryptoPP::StringSink(mac) ) );
+    } catch( const CryptoPP::Exception& e ) {
+        std::cerr << "[8R8K] D::::\n";
+        return;
+    }
+    
+    encoded.clear();
+    CryptoPP::StringSource( mac, true, new CryptoPP::HexEncoder( new CryptoPP::StringSink(encoded) ) );
+    std::cout << "HMAC:   " << encoded << std::endl;
+}
+
 int send_message(std::string & type, std::string& data, std::string&response_type, std::string& response_message, int sock){
 
     //Construct message
@@ -102,7 +129,6 @@ int send_message(std::string & type, std::string& data, std::string&response_typ
     response_message = response.substr(sep_pos+1, response.length() - sep_pos);
     return 0;
 }
-
 
 std::string there_nonce("");
 
@@ -143,3 +169,6 @@ int send_nonce(std::string& data, std::string& response, int sock) {
     response.assign(params.substr(sep_pos, params.length()-sep_pos));
     return 0;
 }
+
+
+
