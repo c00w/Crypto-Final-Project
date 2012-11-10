@@ -7,10 +7,10 @@ STR2INT_ERROR str2int (long &i, char const *s)
     errno = 0;
     l = strtol(s, &end, 0); //Base = 10
     if ((errno == ERANGE && l == LONG_MAX) || l > INT_MAX) {
-        return OVERFLOW;
+        return S_OVERFLOW;
     }
     if ((errno == ERANGE && l == LONG_MIN) || l < INT_MIN) {
-        return UNDERFLOW;
+        return S_UNDERFLOW;
     }
     if (*s == '\0' || *end != '\0') {
         return INCONVERTIBLE;
@@ -253,6 +253,5 @@ int send_nonce(std::string& data, std::string& response, int sock) {
     response.assign(params.substr(sep_pos, params.length()-sep_pos));
     return 0;
 }
-
 
 
