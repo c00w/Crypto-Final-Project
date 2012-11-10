@@ -40,10 +40,12 @@ int handle_input(std::string & input, int sock) {
         }
         char *password = getpass("PIN: ");
         if (password == NULL) {
+            std::cout << "Bad login" << std::endl;
             return 1;
         }
         std::string PIN(password);
         if (PIN.length() != 4) {
+            std::cout << "Bad login" << std::endl;
             return 1;
         }
 
@@ -78,6 +80,7 @@ int handle_input(std::string & input, int sock) {
         }
         else{
             std::cout << "Bad login" << std::endl;
+            return 1;
         }
         User.assign(username);
         return 0;

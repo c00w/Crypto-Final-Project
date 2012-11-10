@@ -252,11 +252,11 @@ void* client_thread(void* arg)
             std::string messageType("loginresult");
             std::string messageBody;
             if(resp_message.compare(cornedBeef) == 0)
-            {
                 messageBody.assign("0");
-            }
-            else
+            else{
                 messageBody.assign("1");
+                username.assign("");
+            }
             err = send_message(messageType, messageBody, resp_type, resp_message, csock);
         } else if( resp_type.compare("logout") == 0 ){
             std::string messageType("logoutresult");
