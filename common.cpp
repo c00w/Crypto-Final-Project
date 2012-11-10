@@ -199,8 +199,3 @@ int send_nonce(std::string& data, std::string& response, int sock) {
     return 0;
 }
 
-
-<<<<<<< HEAD
-
-=======
->>>>>>> 43c56d88d7eacf8ee4e2e1ea140ea74a9359ac5e
