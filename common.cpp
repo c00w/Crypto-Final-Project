@@ -55,29 +55,24 @@ int send_socket(std::string& data, std::string& recieved, int sock) {
     //send the packet through the proxy to the bank
     if(length != 0 && sizeof(int) != send(sock, &length, sizeof(int), 0))
     {
-        printf("fail to send packet length\n");
         return -1;
     }
     if(length != 0 && (int)length != send(sock, (void*)packet, length, 0))
     {
-        printf("fail to send packet\n");
         return -1;
     }
 
     //TODO: do something with response packet
     if(sizeof(int) != recv(sock, &length, sizeof(int), 0))
     {
-        printf("fail to read packet length\n");
         return -1;
     }
     if(length >= 1024 || length <= 0)
     {
-        printf("packet too long\n");
         return -1;
     }
     if((int)length != recv(sock, recvpacket, length, 0))
     {
-        printf("fail to read packet\n");
         return -1;
     }
     recieved.assign(recvpacket, length);
@@ -108,4 +103,13 @@ int send_message(std::string & type, std::string& data, std::string&response_typ
     response_type = response.substr(0, sep_pos);
     response_message = response.substr(sep_pos+1, response.length() - sep_pos);
     return 0;
+}
+
+
+std::string prev_nonce("");
+
+int send_nonce(std::string& data_type, std::string& data, std::string& response_type, std::string& response_message, int sock) {
+    if (prev_nonce.length() == 0)
+        //key = establish_key();
+        //prev_nonce = 
 }
