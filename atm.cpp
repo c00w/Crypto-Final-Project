@@ -14,6 +14,7 @@
 
 #include <string>
 #include <iostream>
+#include <fstream>
 
 #include "cryptopp/sha.h"
 
@@ -38,7 +39,23 @@ int handle_input(std::string & input, int sock) {
         if (username.length() <= 0) {
             return 1;
         }
-        char *password = getpass("PIN: ");
+        
+        std::string cardFile(username);
+        cardFile.append(".card");
+        std::ifstream cardReader;
+        cardReader.open(cardFile.c_str());
+        if( !cardReader.good() ){
+            std::cout << "[atm] Bad login." << std::endl;
+            return 1;
+        }
+        std::string userCard;
+        cardReader >> userCard;
+        if( userCard.length() != 64 ){
+            std::cout << "[atm] Bad login." << std::endl;
+            return 1;
+        }
+        
+        char *password = getpass("      PIN: ");
         if (password == NULL) {
             std::cout << "[atm] Bad login." << std::endl;
             return 1;
@@ -60,9 +77,11 @@ int handle_input(std::string & input, int sock) {
             return 1;
         }
 
-        //Hash the pin with the salt
+        //Hash the login info with the salt
         msg_type.assign("login");
-        msg_data = hashKey( resp_data, PIN );
+        std::string loginData(userCard);
+        loginData.append(PIN);
+        msg_data = hashKey( resp_data, loginData );
 
         //Try and login
         err = send_message(msg_type, msg_data, resp_type, resp_data, sock);

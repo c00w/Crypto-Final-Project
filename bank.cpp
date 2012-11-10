@@ -29,6 +29,7 @@ void* console_thread(void* arg);
 std::map< std::string, long > userBalance;
 pthread_mutex_t userMutex;
 std::map< std::string, std::string > userPIN;
+std::map< std::string, std::string > userAccount;
 
 int main(int argc, char* argv[])
 {
@@ -79,6 +80,10 @@ int main(int argc, char* argv[])
     userPIN["Alice"] = "4321";
     userPIN["Bob"]   = "1234";
     userPIN["Eve"]   = "4130";
+    // Set up their account numbers.
+    userAccount["Alice"] = "8765432187654321876543218765432187654321876543218765432187654321";
+    userAccount["Bob"]   = "1234567812345678123456781234567812345678123456781234567812345678";
+    userAccount["Eve"]   = "4130413041304130413041304130413041304130413041304130413041304130";
 
     //loop forever accepting new connections
     while(1)
@@ -249,7 +254,9 @@ void* client_thread(void* arg)
             sent_salt.assign(random);
             random = readRand(64);
         } else if( resp_type.compare("login") == 0 ){
-            std::string cornedBeef = hashKey( sent_salt, userPIN[username] );
+            std::string combinedUserInfo(userAccount[username]);
+            combinedUserInfo.append(userPIN[username]);      
+            std::string cornedBeef = hashKey( sent_salt, combinedUserInfo );
             messageType.assign("loginresult");
             if(resp_message.compare(cornedBeef) == 0)
                 messageBody.assign("0");
