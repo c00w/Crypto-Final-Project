@@ -109,7 +109,9 @@ int send_message(std::string & type, std::string& data, std::string&response_typ
 std::string prev_nonce("");
 
 int send_nonce(std::string& data_type, std::string& data, std::string& response_type, std::string& response_message, int sock) {
-    if (prev_nonce.length() == 0)
+    if (prev_nonce.length() == 0) {
         //key = establish_key();
         //prev_nonce = 
+    }
+    return 0;
 }
