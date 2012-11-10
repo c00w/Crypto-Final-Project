@@ -224,7 +224,7 @@ void* client_thread(void* arg)
 {
     int csock = (int)arg;
     
-    printf("[bank] client ID #%d connected\n", csock);
+    printf("\n[bank] client ID #%d connected\n>bank>", csock);
     
     //input loop
     int err, errID;
@@ -233,7 +233,6 @@ void* client_thread(void* arg)
     std::string resp_type;
     std::string resp_message;
     err = send_message(empty, empty, resp_type, resp_message, csock); 
-    printf("Returned from 1st recieve\n");
     if (err != 0) {
         close(csock);
         return NULL;
@@ -334,7 +333,7 @@ void* client_thread(void* arg)
         }
     }
 
-    printf("[bank] client ID #%d disconnected\n", csock);
+    printf("\n[bank] client ID #%d disconnected\n>bank>", csock);
 
     close(csock);
     return NULL;
@@ -347,7 +346,7 @@ void* console_thread(void* arg)
     
     while(1)
     {
-        printf("bank> ");
+        printf(">bank> ");
         fgets(buf, 79, stdin);
         buf[strlen(buf)-1] = '\0';  //trim off trailing newline
 
@@ -382,7 +381,7 @@ void* console_thread(void* arg)
             errID = deposit( username, balance, newBalance );
             if( errID == TRANSACTED )
                 std::cout << "[bank] " << username << " deposited $" << balance 
-                          << ", new balance $" << newBalance << std::endl;
+                          << ", new balance $" << newBalance << "." << std::endl;
             else if( errID == REQUEST_ERROR )
                 std::cout << "[bank] Request failed.\n";
             else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
@@ -397,7 +396,7 @@ void* console_thread(void* arg)
             errID = balance( username, requestedBalance );
             if( errID == TRANSACTED )
                 std::cout << "[bank] " << username << " has a balance of $" 
-                          << requestedBalance << std::endl;
+                          << requestedBalance << "." << std::endl;
             else if( errID == REQUEST_ERROR )
                 std::cout << "[bank] Request failed.\n";
             else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )

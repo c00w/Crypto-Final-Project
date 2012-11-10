@@ -22,7 +22,7 @@
 std::string User("");
 
 void error() {
-    std::cout<< "Error" << std::endl;
+    std::cout<< "[atm] Error. Please try again." << std::endl;
 }
 
 int handle_input(std::string & input, int sock) {
@@ -40,12 +40,12 @@ int handle_input(std::string & input, int sock) {
         }
         char *password = getpass("PIN: ");
         if (password == NULL) {
-            std::cout << "Bad login" << std::endl;
+            std::cout << "[atm] Bad login." << std::endl;
             return 1;
         }
         std::string PIN(password);
         if (PIN.length() != 4) {
-            std::cout << "Bad login" << std::endl;
+            std::cout << "[atm] Bad login." << std::endl;
             return 1;
         }
 
@@ -56,8 +56,6 @@ int handle_input(std::string & input, int sock) {
         std::string resp_data;
         int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
 
-        std::cout << "Recieved salt" << std::endl;
-
         if (err != 0 || resp_type.compare("sendsalt") != 0 || resp_data.length() <28) {
             return 1;
         }
@@ -65,8 +63,6 @@ int handle_input(std::string & input, int sock) {
         //Hash the pin with the salt
         msg_type.assign("login");
         msg_data = hashKey( resp_data, PIN );
-
-        std::cout << "Sent salt to server" << std::endl;
 
         //Try and login
         err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
@@ -76,10 +72,10 @@ int handle_input(std::string & input, int sock) {
         }
         
         if (resp_data.compare("0") == 0) {
-            std::cout << "Logged in" << std::endl;
+            std::cout << "[atm] Logged in as " << username << "." << std::endl;
         }
         else{
-            std::cout << "Bad login" << std::endl;
+            std::cout << "[atm] Bad login." << std::endl;
             return 1;
         }
         User.assign(username);
@@ -98,7 +94,7 @@ int handle_input(std::string & input, int sock) {
             return 1;
        }
        if( resp_data.compare("0") == 0 ) {
-            std::cout << "Logged out" << std::endl;
+            std::cout << "[atm] Logged out." << std::endl;
             User.assign("");
        }
     } else if (input.substr(0,7).compare("balance") == 0) {
@@ -108,14 +104,12 @@ int handle_input(std::string & input, int sock) {
             return 1;
         }
         if( resp_data.compare("REQUEST_ERROR") == 0 ){
-            std::cout << "Invalid request.\n";
             return 0;
         } else if( resp_data.compare("CRITICAL_ERROR") == 0 ){
-            std::cout << "Critical error.\n";
             return 1;
         }
         
-        std::cout << "User has a balance of $" << resp_data << std::endl;
+        std::cout << "[atm] User has a balance of $" << resp_data << "." << std::endl;
         
     } else if (input.substr(0,8).compare("transfer") == 0) {
         if (input.length() < 9) {
@@ -139,15 +133,13 @@ int handle_input(std::string & input, int sock) {
         }
 
         if( resp_data.compare("REQUEST_ERROR") == 0 ){
-            std::cout << "Invalid request.\n";
-            return 1;
+            return 0;
         } else if( resp_data.compare("CRITICAL_ERROR") == 0 ){
-            std::cout << "Critical error.\n";
             return 1;
         }
         
-        std::cout << "User transferred $" << username.substr(1,username.length()) << " to " << amount
-                  << ", leaving a final balance of $" << resp_data << std::endl;
+        std::cout << "[atm] User transferred $" << username.substr(1,username.length()) << " to " << amount
+                  << ", leaving a final balance of $" << resp_data << "." << std::endl;
         
     } else if (input.substr(0,8).compare("withdraw") == 0) {
         if (input.length() < 9) {
@@ -161,14 +153,12 @@ int handle_input(std::string & input, int sock) {
         }
 
         if( resp_data.compare("REQUEST_ERROR") == 0 ){
-            std::cout << "Invalid request.\n";
-            return 1;
+            return 0;
         } else if( resp_data.compare("CRITICAL_ERROR") == 0 ){
-            std::cout << "Critical error.\n";
             return 1;
         }
         
-        std::cout << "User withdrew $" << amount << ", new balance $" << resp_data << std::endl;
+        std::cout << "[atm] User withdrew $" << amount << ", new balance $" << resp_data << "." << std::endl;
         
     } else {
         return 1;
@@ -212,7 +202,7 @@ int main(int argc, char* argv[])
     char buf[80];
     while(1)
     {
-        printf("atm> ");
+        printf(">atm> ");
         fgets(buf, 79, stdin);
         buf[strlen(buf)-1] = '\0';  //trim off trailing newline
         

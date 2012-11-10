@@ -28,7 +28,5 @@ withdrawresult|amount
     Sent by bank. Amount is the string format of their new balance in dollars, or an error code
     
 notes:
-    str2int doesn't make sure that it's a string--do it there, or everywhere else?
-    clean up the errors on the atm, right now they display twice
     force killing an ATM crashes the bank (appears to try to resend last request?)
     remove some more debug code
