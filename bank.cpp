@@ -101,6 +101,7 @@ int main(int argc, char* argv[])
 
 int balance( std::string& username, long& requestedBalance )
 {
+    // Gets the users balance, returns in requestedBalance.
     if( userBalance.find( username ) == userBalance.end() ){
         printf( "[bank] Error: nonexistant user.\n" );
         return REQUEST_ERROR;
@@ -120,6 +121,7 @@ int deposit( std::string& username, long argument, long& newBalance )
         return LOCK_ERROR;
     }
 
+    // Verify that the input is acceptable.
     if( userBalance.find( username ) == userBalance.end() ){
         printf( "[bank] Error: nonexistant user.\n" );
         return REQUEST_ERROR;
@@ -139,6 +141,7 @@ int deposit( std::string& username, long argument, long& newBalance )
         return REQUEST_ERROR;
     }
 
+    // Do the deposit, return the new balance in newBalance.
     userBalance[username] += argument;
     newBalance = userBalance[username];
 
@@ -159,6 +162,7 @@ int withdraw( std::string& username, long argument, long& newBalance )
         return LOCK_ERROR;
     }
 
+    // Verify that the input is acceptable.
     if( userBalance.find( username ) == userBalance.end() ){
         printf( "[bank] Error: nonexistant user.\n" );
         return REQUEST_ERROR;
@@ -172,6 +176,7 @@ int withdraw( std::string& username, long argument, long& newBalance )
         return REQUEST_ERROR;
     }
 
+    // Do the withdrawl, return the new balance in newBalance.
     userBalance[username] -= argument;
     newBalance = userBalance[username];
 
@@ -191,6 +196,7 @@ int transfer( std::string& username1, std::string& username2, long argument, lon
         return LOCK_ERROR;
     }
 
+    // Verify that the input is acceptable
     if( userBalance.find( username1 ) == userBalance.end() ){
         printf( "[bank] Error: nonexistant user 1.\n" );
         return REQUEST_ERROR;
@@ -214,6 +220,7 @@ int transfer( std::string& username1, std::string& username2, long argument, lon
         return REQUEST_ERROR;
     }
 
+    // Do the transfer, then return the new balance for the first user in newBalance
     userBalance[username1] -= argument;
     userBalance[username2] += argument;
     newBalance = userBalance[username1];
@@ -227,6 +234,7 @@ int transfer( std::string& username1, std::string& username2, long argument, lon
 
 void* client_thread(void* arg)
 {
+    // A client thread for any ATM.
     int csock = (int)arg;
     
     std::cout << "\n[bank] Client ID #" << csock << " connected.\n>bank>";
@@ -247,13 +255,16 @@ void* client_thread(void* arg)
     while(err == 0)
     {
         std::cout << resp_type << " " << resp_message << std::endl;
+        // Initial setting up the connection.
         if( resp_type.compare("getsalt") == 0 ) {
+            // Getting the salt.
             username = resp_message;
             messageType.assign("sendsalt");
             messageBody.assign(random);
             sent_salt.assign(random);
             random = readRand(64);
         } else if( resp_type.compare("login") == 0 ){
+            // Handling for logging in with PIN and accout number verification.
             std::string combinedUserInfo(userAccount[username]);
             combinedUserInfo.append(userPIN[username]);      
             std::string cornedBeef = hashKey( sent_salt, combinedUserInfo );
@@ -265,12 +276,14 @@ void* client_thread(void* arg)
                 username.assign("");
             }
         } else if( resp_type.compare("logout") == 0 ){
+            // Logging out.
             messageType.assign("logoutresult");
             messageBody.assign("0");
             username.assign("");
         }
         // Begin the actual ATM requests involving moneys.
         else if( resp_type.compare("balance") == 0 ){
+            // Handle a balance request from the user.
             long requestedBalance;
             errID = balance( username, requestedBalance );
 
@@ -285,6 +298,7 @@ void* client_thread(void* arg)
             else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
                 messageBody.assign("CRITICAL_ERROR");
         } else if( resp_type.compare("withdraw") == 0 ){
+            // Handle a withdrawl request from the user.
             messageType.assign("withdrawresult");
             
             long withdrawl;
@@ -307,6 +321,7 @@ void* client_thread(void* arg)
                 messageBody.assign("CRITICAL_ERROR");
 
         } else if( resp_type.compare("transfer") == 0 ){
+            // Handle a transfer request from the user.
             messageType.assign("transferresult");
             
             std::string recipient, amount;
@@ -344,6 +359,7 @@ void* client_thread(void* arg)
 
 void* console_thread(void* arg)
 {
+    // A thread for the bank to handle direct requests.
     char buf[80];
     int errID;
 
@@ -359,8 +375,8 @@ void* console_thread(void* arg)
             continue;
         }
 
-        //Handle deposit
         if (input.substr(0,7).compare("deposit") == 0) {
+            //Handle deposit
             std::string params = input.substr(8, input.length()-8);
 
             size_t space_index = params.find(' ');
@@ -378,7 +394,6 @@ void* console_thread(void* arg)
             if (str2int(balance, balance_str.c_str()) != SUCCESS) {
                 continue;
             }
-            //std::cout << username << std::endl <<  balance << std::endl;
 
             long newBalance;
             errID = deposit( username, balance, newBalance );
@@ -390,10 +405,9 @@ void* console_thread(void* arg)
             else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
                 std::cout << "[bank] Critical failure.\n";
 
-        //Handle balance
         } else if (input.substr(0,7).compare("balance") == 0) {
+            //Handle balance
             std::string username = input.substr(8, input.length()-8);
-            //std:: cout << username << std::endl;
 
             long requestedBalance;
             errID = balance( username, requestedBalance );

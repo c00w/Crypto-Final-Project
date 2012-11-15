@@ -3,7 +3,7 @@ Security protocols:
     2. Messages are wrapped in the following layers:
         a. Nonce layer for consistent length
         b. HMAC layer for message integrity
-        c. ADS layer for encryption
+        c. AES layer for encryption
     3. The potential vulnerabilities for:
         a. Message integrity:
             i. Distribution: messages will fail decryption if sent to the wrong recipient

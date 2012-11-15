@@ -103,6 +103,7 @@ bool compileHashedMessage( std::string plain, std::string key, std::string& comp
 bool applyHMAC( std::string plain, std::string stringKey, std::string& hashed ) {
     CryptoPP::SecByteBlock key( (byte*)stringKey.c_str(), stringKey.length() );
     
+    // Set up the required parts for the HMAC.
     std::string encoded, mac;
     encoded.clear();
     CryptoPP::StringSource( key, key.size(), true, 
@@ -118,14 +119,17 @@ bool applyHMAC( std::string plain, std::string stringKey, std::string& hashed ) 
         return 1;
     }
     
+    // Reapply it.
     encoded.clear();
     CryptoPP::StringSource( mac, true, new CryptoPP::HexEncoder( new CryptoPP::StringSink(encoded) ) );
     
+    // Return the hashed plaintext and a success.
     hashed.assign(encoded);
     return 0;
 }
 
 bool validHMAC( std::string hash, std::string stringKey, std::string plain ) {
+    // Verify if the HMAC comes out as identical.
     std::string attemptedHash;
     if( applyHMAC( plain, stringKey, attemptedHash ) ) return 0;
     if( hash.compare(attemptedHash) == 0 ) return 1;
@@ -134,7 +138,7 @@ bool validHMAC( std::string hash, std::string stringKey, std::string plain ) {
 
 bool extractData( std::string fullMessage, std::string stringKey, std::string& data )
 {
-    // hash|time|message
+    // Extract the message components, formatted as hash|time|message
     std::string hash, time, message;
     int pipeLocs[2];
     pipeLocs[0] = (int)fullMessage.find("|");
@@ -189,6 +193,7 @@ CryptoPP::CFB_Mode<CryptoPP::AES >::Decryption aesdecrypt;
 CryptoPP::CFB_Mode<CryptoPP::AES >::Encryption aesencrypt;
 
 int send_aes(std::string& data, std::string& response, int sock) {
+    // Attempt to initialize and send the message.
     try {
         if (initialized == false) {
             byte iv[CryptoPP::AES::BLOCKSIZE] = "123456789123456";
@@ -216,6 +221,7 @@ int send_aes(std::string& data, std::string& response, int sock) {
 std::string there_nonce("");
 
 int send_nonce(std::string& data, std::string& response, int sock) {
+    // Appending a nonce onto the messages to achieve consistent length.
     std::string my_nonce, new_data;
     if (there_nonce.length() == 0) {
         //key = establish_key();
