@@ -27,11 +27,13 @@ void error() {
 }
 
 int handle_input(std::string & input, int sock) {
+    // Handles user input
     if (input.length() < 6) {
         return 1;
     }
 
     if (input.substr(0, 5).compare("login") == 0) {
+        // Handle a login request
         if (User.length() > 0) {
             return 1;
         }
@@ -107,6 +109,7 @@ int handle_input(std::string & input, int sock) {
     }
 
     if (input.substr(0,6).compare("logout") == 0) {
+       // Handle a logout request
        std::string msg_type("logout"), msg_data(""), resp_type, resp_data;
        int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
        if( err != 0 || resp_type.compare("logoutresult") != 0 ) {
@@ -117,6 +120,7 @@ int handle_input(std::string & input, int sock) {
             User.assign("");
        }
     } else if (input.substr(0,7).compare("balance") == 0) {
+        // Handle a balance request
         std::string msg_type("balance"), msg_data(""), resp_type, resp_data;
         int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
         if (err != 0 || resp_type.compare("balanceresult") != 0) {
@@ -131,6 +135,7 @@ int handle_input(std::string & input, int sock) {
         std::cout << "[atm] User has a balance of $" << resp_data << "." << std::endl;
         
     } else if (input.substr(0,8).compare("transfer") == 0) {
+        // Handle a transfer request
         if (input.length() < 9) {
             return 1;
         }
@@ -161,6 +166,7 @@ int handle_input(std::string & input, int sock) {
                   << ", leaving a final balance of $" << resp_data << "." << std::endl;
         
     } else if (input.substr(0,8).compare("withdraw") == 0) {
+        // Handle a withdrawl request
         if (input.length() < 9) {
             return 1;
         }

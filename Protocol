@@ -1,0 +1,18 @@
+Security protocols:
+    1. Initial key exchange done through RSA public key swap
+    2. Messages are wrapped in the following layers:
+        a. Nonce layer for consistent length
+        b. HMAC layer for message integrity
+        c. AES layer for encryption
+    3. The potential vulnerabilities for:
+        a. Message integrity:
+            i. Distribution: messages will fail decryption if sent to the wrong recipient
+            ii. Source: messages are signed as part of encryption
+            iii. Traffic: encryption ensures that traffic can only be noted, but not read
+            iv. Contents: encryption makes message contents secure
+            v. Timing: operations are padded to hide operation
+            vi. Sequence: the forced delays and the HMACed timestamp checks ensure proper order
+            vii. Destination: messages will fail decryption if sent to the wrong recipient
+            viii. Source:
+        b. Attacks
+            i. Replay attack: the forced delays combined with the HMACed time and 100ms packet expiration means that replay attacks will fail
