@@ -36,3 +36,4 @@ std::string readRand( int desiredBytes );
 std::string hashKey( std::string salt, std::string PIN );
 
 int send_message(std::string & type, std::string& data, std::string&response_type, std::string& response_message, int sock);
+int send_nonce(std::string& data, std::string& response, int sock);

@@ -46,6 +46,16 @@ std::string readRand( int desiredBytes )
     return randomString;
 }
 
+std::string readRandInt()
+{
+    FILE* file = fopen("/dev/urandom", "r");
+    int result;
+    fgets((char *)&result, sizeof(int), file);
+    fclose(file);
+
+    return std::to_string(result);
+}
+
 int send_socket(std::string& data, std::string& recieved, int sock) {
 
     size_t length = data.length();
@@ -61,7 +71,7 @@ int send_socket(std::string& data, std::string& recieved, int sock) {
     {
         return -1;
     }
-
+    std::cout << data << std::endl;
     //TODO: do something with response packet
     if(sizeof(int) != recv(sock, &length, sizeof(int), 0))
     {
@@ -76,6 +86,7 @@ int send_socket(std::string& data, std::string& recieved, int sock) {
         return -1;
     }
     recieved.assign(recvpacket, length);
+    std::cout << recvpacket << std::endl;
     return 0;
 }
 
@@ -171,7 +182,7 @@ int send_message(std::string & type, std::string& data, std::string&response_typ
 
     //Send it and get response
     std::string response;
-    int err = send_socket(message, response, sock);
+    int err = send_nonce(message, response, sock);
     if (err != 0) {
         return err;
     }
@@ -223,7 +234,7 @@ int send_nonce(std::string& data, std::string& response, int sock) {
         there_nonce.assign("asdasdasd");
     }
     if (data.length() != 0) {
-        my_nonce.assign(readRand(32));
+        my_nonce.assign(readRandInt());
         new_data.assign(my_nonce);
         new_data.append("|");
         new_data.append(there_nonce);
@@ -233,23 +244,29 @@ int send_nonce(std::string& data, std::string& response, int sock) {
        my_nonce.assign(there_nonce);
        new_data.assign("");
     }
-    int err = send_aes(new_data, response, sock);
+    int err = send_socket(new_data, response, sock);
     if (err != 0) {
         return err;
     }
+
     std::string params(response);
     size_t sep_pos = params.find('|');
     if (sep_pos == params.npos) {
         return -1;
     };
+
     there_nonce = params.substr(0, sep_pos);
-    params.assign(params.substr(sep_pos, params.length()-sep_pos));
+    params.assign(params.substr(sep_pos+1, params.length()-sep_pos));
     sep_pos = params.find('|');
+    if (sep_pos == params.npos) {
+        return -1;
+    }
     std::string sent_my_nonce = params.substr(0, sep_pos);
+    std::cout << my_nonce << " vs: " << sent_my_nonce << std::endl;
     if (my_nonce.compare(sent_my_nonce) != 0) {
         return -1;
     }
-    response.assign(params.substr(sep_pos, params.length()-sep_pos));
+    response.assign(params.substr(sep_pos+1, params.length()-sep_pos));
     return 0;
 }
 
