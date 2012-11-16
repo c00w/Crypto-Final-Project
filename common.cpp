@@ -71,9 +71,8 @@ int send_socket(std::string& data, std::string& recieved, int sock) {
     {
         return -1;
     }
-    std::cout << data << std::endl;
     //TODO: do something with response packet
-    if(sizeof(int) != recv(sock, &length, sizeof(int), 0))
+    if(sizeof(int) != recv(sock, &length, sizeof(int), MSG_WAITALL))
     {
         return -1;
     }
@@ -81,12 +80,11 @@ int send_socket(std::string& data, std::string& recieved, int sock) {
     {
         return -1;
     }
-    if((int)length != recv(sock, recvpacket, length, 0))
+    if((int)length != recv(sock, recvpacket, length, MSG_WAITALL))
     {
         return -1;
     }
     recieved.assign(recvpacket, length);
-    std::cout << recvpacket << std::endl;
     return 0;
 }
 
@@ -160,7 +158,6 @@ bool extractData( std::string fullMessage, std::string stringKey, std::string& d
 
     // Verify the integrity
     if( !validHMAC( hash, stringKey, message ) ){
-        std::cout << "Invalid hash.";
         return 1;
     }
     // Verify that the timestamp is reasonable.
@@ -207,6 +204,7 @@ int send_aes(std::string& data, std::string& response, int sock) {
     // Attempt to initialize and send the message.
     try {
         if (initialized == false) {
+            initialized = true;
             byte iv[CryptoPP::AES::BLOCKSIZE] = "123456789123456";
             byte key[32] = "1234567890123456789012345678901";
             CryptoPP::SecByteBlock fukey(key, 32);
@@ -214,14 +212,14 @@ int send_aes(std::string& data, std::string& response, int sock) {
             aesencrypt.SetKeyWithIV(fukey, fukey.size(), iv);
         }
         byte ciphertext[data.length()];
-        aesencrypt.ProcessData((byte *)data.c_str(), ciphertext, data.length());
+        aesencrypt.ProcessData(ciphertext, (byte *)data.c_str(), data.length());
         data.assign((char* )ciphertext, data.length());
         int err = send_socket(data, response, sock);
         if (err != 0) {
             return err;
         }
         byte plaintext[response.length()];
-        aesdecrypt.ProcessData((byte *)response.c_str(), plaintext, response.length());
+        aesdecrypt.ProcessData(plaintext, (byte *)response.c_str(), response.length());
         response.assign((char *)plaintext, response.length());
     } catch( const CryptoPP::Exception& e) {
         return -1;
@@ -250,7 +248,7 @@ int send_nonce(std::string& data, std::string& response, int sock) {
        my_nonce.assign(there_nonce);
        new_data.assign("");
     }
-    int err = send_socket(new_data, response, sock);
+    int err = send_aes(new_data, response, sock);
     if (err != 0) {
         return err;
     }
@@ -267,8 +265,8 @@ int send_nonce(std::string& data, std::string& response, int sock) {
     if (sep_pos == params.npos) {
         return -1;
     }
+
     std::string sent_my_nonce = params.substr(0, sep_pos);
-    std::cout << my_nonce << " vs: " << sent_my_nonce << std::endl;
     if (my_nonce.compare(sent_my_nonce) != 0) {
         return -1;
     }
