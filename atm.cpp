@@ -26,6 +26,15 @@ void error() {
     std::cout<< "[atm] Error. Please try again." << std::endl;
 }
 
+int error_guard(std::string resp_data) {
+    if( resp_data.compare("REQUEST_ERROR") == 0 ){
+        return 1;
+    } else if( resp_data.compare("CRITICAL_ERROR") == 0 ){
+        return 1;
+    }
+    return 0;
+}
+
 int handle_input(std::string & input, int sock) {
     // Handles user input
     if (input.length() < 6) {
@@ -41,7 +50,7 @@ int handle_input(std::string & input, int sock) {
         if (username.length() <= 0) {
             return 1;
         }
-        
+
         std::string cardFile(username);
         cardFile.append(".card");
         std::ifstream cardReader;
@@ -56,7 +65,7 @@ int handle_input(std::string & input, int sock) {
             std::cout << "[atm] Bad login." << std::endl;
             return 1;
         }
-        
+
         char *password = getpass("      PIN: ");
         if (password == NULL) {
             std::cout << "[atm] Bad login." << std::endl;
@@ -91,7 +100,7 @@ int handle_input(std::string & input, int sock) {
         if (err != 0 || resp_type.compare("loginresult") != 0) {
             return 1;
         }
-        
+
         if (resp_data.compare("0") == 0) {
             std::cout << "[atm] Logged in as " << username << "." << std::endl;
         }
@@ -126,14 +135,12 @@ int handle_input(std::string & input, int sock) {
         if (err != 0 || resp_type.compare("balanceresult") != 0) {
             return 1;
         }
-        if( resp_data.compare("REQUEST_ERROR") == 0 ){
-            return 0;
-        } else if( resp_data.compare("CRITICAL_ERROR") == 0 ){
+        if (error_guard(resp_data)!= 0) {
             return 1;
         }
-        
+
         std::cout << "[atm] User has a balance of $" << resp_data << "." << std::endl;
-        
+
     } else if (input.substr(0,8).compare("transfer") == 0) {
         // Handle a transfer request
         if (input.length() < 9) {
@@ -148,7 +155,7 @@ int handle_input(std::string & input, int sock) {
         std::string username = params.substr(0, space_index);
         std::string amount = params.substr(space_index, params.length()-space_index);
 
-        std::string msg_type("transfer"), msg_data(username), resp_type, resp_data; 
+        std::string msg_type("transfer"), msg_data(username), resp_type, resp_data;
         msg_data.append("|");
         msg_data.append(amount);
         int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
@@ -156,15 +163,12 @@ int handle_input(std::string & input, int sock) {
             return 1;
         }
 
-        if( resp_data.compare("REQUEST_ERROR") == 0 ){
-            return 0;
-        } else if( resp_data.compare("CRITICAL_ERROR") == 0 ){
+        if (error_guard(resp_data) != 0) {
             return 1;
         }
-        
         std::cout << "[atm] User transferred $" << username.substr(1,username.length()) << " to " << amount
                   << ", leaving a final balance of $" << resp_data << "." << std::endl;
-        
+
     } else if (input.substr(0,8).compare("withdraw") == 0) {
         // Handle a withdrawl request
         if (input.length() < 9) {
@@ -177,14 +181,11 @@ int handle_input(std::string & input, int sock) {
             return 1;
         }
 
-        if( resp_data.compare("REQUEST_ERROR") == 0 ){
-            return 0;
-        } else if( resp_data.compare("CRITICAL_ERROR") == 0 ){
+        if (error_guard(resp_data) != 0) {
             return 1;
         }
-        
         std::cout << "[atm] User withdrew $" << amount << ", new balance $" << resp_data << "." << std::endl;
-        
+
     } else {
         return 1;
     }
@@ -200,7 +201,7 @@ int main(int argc, char* argv[])
         printf("Usage: atm proxy-port\n");
         return -1;
     }
-    
+
     //socket setup
     unsigned short proxport = atoi(argv[1]);
     int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -222,7 +223,7 @@ int main(int argc, char* argv[])
         printf("fail to connect to proxy\n");
         return -1;
     }
-    
+
     //input loop
     char buf[80];
     while(1)
@@ -230,7 +231,7 @@ int main(int argc, char* argv[])
         printf(">atm> ");
         fgets(buf, 79, stdin);
         buf[strlen(buf)-1] = '\0';  //trim off trailing newline
-        
+
         //Upcast string
         std::string input(buf);
         int err = handle_input(input, sock);
@@ -238,7 +239,7 @@ int main(int argc, char* argv[])
             error();
         }
     }
-    
+
     //cleanup
     close(sock);
     return 0;
