@@ -151,7 +151,7 @@ int handle_input(std::string & input, int sock) {
             return 1;
         }
         std::string username = params.substr(0, space_index);
-        std::string amount = params.substr(space_index, params.length()-space_index);
+        std::string amount = params.substr(space_index+1, params.length()-space_index-1);
 
         std::string msg_type("transfer"), msg_data(username), resp_type, resp_data;
         msg_data.append("|");
@@ -164,7 +164,7 @@ int handle_input(std::string & input, int sock) {
         if (error_guard(resp_data) != 0) {
             return 1;
         }
-        std::cout << "[atm] User transferred $" << amount << " to " << amount
+        std::cout << "[atm] User transferred $" << amount << " to " <<username 
                   << ", leaving a final balance of $" << resp_data << "." << std::endl;
 
     } else if (input.substr(0,8).compare("withdraw") == 0) {
