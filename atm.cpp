@@ -33,7 +33,7 @@ int error_guard(std::string resp_data) {
     return 0;
 }
 
-int handle_input(std::string & input, int sock) {
+int handle_input(std::string & input, int sock, keyinfo& conn_info) {
     // Handles user input
     if (input.length() < 6) {
         return 1;
@@ -80,7 +80,7 @@ int handle_input(std::string & input, int sock) {
         std::string msg_data(username);
         std::string resp_type;
         std::string resp_data;
-        int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
+        int err = send_message(msg_type, msg_data, resp_type, resp_data, sock, conn_info);
 
         if (err != 0 || resp_type.compare("sendsalt") != 0 || resp_data.length() <28) {
             return 1;
@@ -93,7 +93,7 @@ int handle_input(std::string & input, int sock) {
         msg_data = hashKey( resp_data, loginData );
 
         //Try and login
-        err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
+        err = send_message(msg_type, msg_data, resp_type, resp_data, sock, conn_info);
 
         if (err != 0 || resp_type.compare("loginresult") != 0) {
             return 1;
@@ -118,7 +118,7 @@ int handle_input(std::string & input, int sock) {
     if (input.substr(0,6).compare("logout") == 0) {
        // Handle a logout request
        std::string msg_type("logout"), msg_data(""), resp_type, resp_data;
-       int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
+       int err = send_message(msg_type, msg_data, resp_type, resp_data, sock, conn_info);
        if( err != 0 || resp_type.compare("logoutresult") != 0 ) {
             return 1;
        }
@@ -129,7 +129,7 @@ int handle_input(std::string & input, int sock) {
     } else if (input.substr(0,7).compare("balance") == 0) {
         // Handle a balance request
         std::string msg_type("balance"), msg_data(""), resp_type, resp_data;
-        int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
+        int err = send_message(msg_type, msg_data, resp_type, resp_data, sock, conn_info);
         if (err != 0 || resp_type.compare("balanceresult") != 0) {
             return 1;
         }
@@ -156,7 +156,7 @@ int handle_input(std::string & input, int sock) {
         std::string msg_type("transfer"), msg_data(username), resp_type, resp_data;
         msg_data.append("|");
         msg_data.append(amount);
-        int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
+        int err = send_message(msg_type, msg_data, resp_type, resp_data, sock, conn_info);
         if (err != 0 || resp_type.compare("transferresult") != 0) {
             return 1;
         }
@@ -174,7 +174,7 @@ int handle_input(std::string & input, int sock) {
         }
         std::string amount = input.substr(9, input.length()-9);
         std::string msg_type("withdraw"), msg_data(amount), resp_type, resp_data;
-        int err = send_message(msg_type, msg_data, resp_type, resp_data, sock);
+        int err = send_message(msg_type, msg_data, resp_type, resp_data, sock, conn_info);
         if (err != 0 || resp_type.compare("withdrawresult") != 0) {
             return 1;
         }
@@ -224,6 +224,7 @@ int main(int argc, char* argv[])
 
     //input loop
     char buf[80];
+    keyinfo conn_info;
     while(1)
     {
         printf(">atm> ");
@@ -232,7 +233,7 @@ int main(int argc, char* argv[])
 
         //Upcast string
         std::string input(buf);
-        int err = handle_input(input, sock);
+        int err = handle_input(input, sock, conn_info);
         if (err != 0) {
             error();
         }
