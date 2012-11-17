@@ -88,27 +88,6 @@ int send_socket(std::string& data, std::string& recieved, int sock) {
     return 0;
 }
 
-bool compileHashedMessage( std::string plain, std::string key, std::string& compiled )
-{
-    // hash|time|message
-    std::string hash, time;
-
-    timeval currentTime;
-    gettimeofday( &currentTime, NULL );
-    double timeNow  = currentTime.tv_sec + ( currentTime.tv_usec / 1000000.0 );
-
-    if( applyHMAC( plain, key, hash ) ) return 1;
-    time.assign( std::to_string(timeNow) );
-
-    compiled.assign(hash);
-    compiled.append("|");
-    compiled.append(time);
-    compiled.append("|");
-    compiled.append(plain);
-
-    return 0;
-}
-
 bool applyHMAC( std::string plain, std::string stringKey, std::string& hashed ) {
     CryptoPP::SecByteBlock key( (byte*)stringKey.c_str(), stringKey.length() );
 
@@ -145,6 +124,26 @@ bool validHMAC( std::string hash, std::string stringKey, std::string plain ) {
     return 0;
 }
 
+bool compileHashedMessage( std::string plain, std::string key, std::string& compiled )
+{
+    // hash|time|message
+    std::string hash, time;
+
+    timeval currentTime;
+    gettimeofday( &currentTime, NULL );
+    double timeNow  = currentTime.tv_sec + ( currentTime.tv_usec / 1000000.0 );
+
+    if( applyHMAC( plain, key, hash ) ) return 1;
+    time.assign( std::to_string(timeNow) );
+
+    compiled.assign(hash);
+    compiled.append("|");
+    compiled.append(time);
+    compiled.append("|");
+    compiled.append(plain);
+    return 0;
+}
+
 bool extractData( std::string fullMessage, std::string stringKey, std::string& data )
 {
     // Extract the message components, formatted as hash|time|message
@@ -152,14 +151,17 @@ bool extractData( std::string fullMessage, std::string stringKey, std::string& d
     int pipeLocs[2];
     pipeLocs[0] = (int)fullMessage.find("|");
     pipeLocs[1] = (int)fullMessage.find( "|", pipeLocs[0]+1 );
-    hash = fullMessage.substr( 0, pipeLocs[0] );
-    time = fullMessage.substr( pipeLocs[0] + 1, pipeLocs[1] );
-    message = fullMessage.substr( pipeLocs[1] + 1, fullMessage.length() );
+    int subLengths[3];
+    subLengths[0] = pipeLocs[0];
+    subLengths[1] = ( pipeLocs[1] - pipeLocs[0] ) - 1;
+    subLengths[2] = ( fullMessage.length() - pipeLocs[1] ) - 1;    
+    hash.assign( fullMessage.substr( 0, subLengths[0] ) );
+    time.assign( fullMessage.substr( pipeLocs[0] + 1, subLengths[1] ) );
+    message.assign( fullMessage.substr( pipeLocs[1] + 1, subLengths[2] ) );
 
     // Verify the integrity
-    if( !validHMAC( hash, stringKey, message ) ){
-        return 1;
-    }
+    if( !validHMAC( hash, stringKey, message ) ) return 1;
+    
     // Verify that the timestamp is reasonable.
     timeval currentTime;
     gettimeofday( &currentTime, NULL );
@@ -167,7 +169,7 @@ bool extractData( std::string fullMessage, std::string stringKey, std::string& d
     double timeThen = atof( time.c_str() );
     if( timeThen > timeNow ) return 1;
     if( timeNow - timeThen > 0.1 ) return 1;
-
+    
     data.assign(message);
     return 0;
 }
@@ -183,7 +185,8 @@ int send_message(std::string & type, std::string& data, std::string&response_typ
 
     //Send it and get response
     std::string response;
-    int err = send_nonce(message, response, sock);
+    //int err = send_nonce(message, response, sock);
+    int err = send_HMAC( message, response, sock );
     if (err != 0) {
         return err;
     }
@@ -200,6 +203,32 @@ bool initialized = false;
 CryptoPP::CFB_Mode<CryptoPP::AES >::Decryption aesdecrypt;
 CryptoPP::CFB_Mode<CryptoPP::AES >::Encryption aesencrypt;
 
+int send_HMAC( std::string& data, std::string& response, int sock ){
+    // Attempt to HMAC and send the message
+    std::string wrappedData;
+    std::string wrappedResponse;
+    std::string unwrappedResponse;
+    std::string key = "1234567890123456";
+    
+    if( data.length() != 0 )
+        if( compileHashedMessage( data, key, wrappedData ) != 0 ){
+            std::cout << "Failed hash. br8kspider\n";
+            return -1;
+        }
+    
+    int err = send_socket( wrappedData, wrappedResponse, sock );
+    if( err != 0 ) return err;
+    
+    if( extractData( wrappedResponse, key, unwrappedResponse ) != 0 ){
+        std::cout << "Failed unwrap. br8kspider\n";
+        return -1;
+    }
+    
+    response.assign( unwrappedResponse );
+    
+    return 0;
+}
+
 int send_aes(std::string& data, std::string& response, int sock) {
     // Attempt to initialize and send the message.
     try {
@@ -214,7 +243,9 @@ int send_aes(std::string& data, std::string& response, int sock) {
         byte ciphertext[data.length()];
         aesencrypt.ProcessData(ciphertext, (byte *)data.c_str(), data.length());
         data.assign((char* )ciphertext, data.length());
+        
         int err = send_socket(data, response, sock);
+        
         if (err != 0) {
             return err;
         }
