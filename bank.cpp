@@ -104,7 +104,7 @@ int balance( std::string& username, long& requestedBalance )
     // Gets the users balance, returns in requestedBalance.
     if( userBalance.find( username ) == userBalance.end() ){
         printf( "[bank] Error: nonexistant user.\n" );
-        return REQUEST_ERROR;
+        return ERROR;
     }
 
     requestedBalance = userBalance[username];
@@ -124,21 +124,21 @@ int deposit( std::string& username, long argument, long& newBalance )
     // Verify that the input is acceptable.
     if( userBalance.find( username ) == userBalance.end() ){
         printf( "[bank] Error: nonexistant user.\n" );
-        return REQUEST_ERROR;
+        return ERROR;
     }
     if( argument < 0 ){
         printf( "[bank] Error: cannot deposit negative amounts.\n" );
-        return REQUEST_ERROR;
+        return ERROR;
     }
     long store1 = userBalance[username];
     long store2 = store1;
     if( ( store1 + argument ) < store2 ){
         printf( "[bank] Error: deposit would cause overflow.\n" );
-        return REQUEST_ERROR;
+        return ERROR;
     }
     if( argument < 0 ){
         printf( "[bank] Error: negative deposit amount.\n" );
-        return REQUEST_ERROR;
+        return ERROR;
     }
 
     // Do the deposit, return the new balance in newBalance.
@@ -165,15 +165,15 @@ int withdraw( std::string& username, long argument, long& newBalance )
     // Verify that the input is acceptable.
     if( userBalance.find( username ) == userBalance.end() ){
         printf( "[bank] Error: nonexistant user.\n" );
-        return REQUEST_ERROR;
+        return ERROR;
     }
     if( argument < 0 ){
         printf( "[bank] Error: cannot deposit negative amounts.\n" );
-        return REQUEST_ERROR;
+        return ERROR;
     }
     if( userBalance[username] < argument ){
         printf( "[bank] Error: cannot withdraw more than is in account.\n" );
-        return REQUEST_ERROR;
+        return ERROR;
     }
 
     // Do the withdrawl, return the new balance in newBalance.
@@ -199,25 +199,25 @@ int transfer( std::string& username1, std::string& username2, long argument, lon
     // Verify that the input is acceptable
     if( userBalance.find( username1 ) == userBalance.end() ){
         printf( "[bank] Error: nonexistant user 1.\n" );
-        return REQUEST_ERROR;
+        return ERROR;
     }
     if( userBalance.find( username2 ) == userBalance.end() ){
         printf( "[bank] Error: nonexistant user 2.\n" );
-        return REQUEST_ERROR;
+        return ERROR;
     }
     if( argument < 0 ){
         printf( "[bank] Error: negative transfer amount.\n" );
-        return REQUEST_ERROR;
+        return ERROR;
     }
     if( argument > userBalance[username1] ){
         printf( "[bank] Error: transfer exceeds host user's balance.\n" );
-        return REQUEST_ERROR;
+        return ERROR;
     }
     long store1 = userBalance[username2];
     long store2 = store1;
     if( ( store1 + argument ) < store2 ){
         printf( "[bank] Error: deposit would cause overflow.\n" );
-        return REQUEST_ERROR;
+        return ERROR;
     }
 
     // Do the transfer, then return the new balance for the first user in newBalance
@@ -293,17 +293,17 @@ void* client_thread(void* arg)
                 std::stringstream sBalance;
                 sBalance << requestedBalance;
                 messageBody.assign(sBalance.str());
-            } else if( errID == REQUEST_ERROR )
-                messageBody.assign("REQUEST_ERROR");
+            } else if( errID == ERROR )
+                messageBody.assign("ERROR");
             else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
-                messageBody.assign("CRITICAL_ERROR");
+                messageBody.assign("ERROR");
         } else if( resp_type.compare("withdraw") == 0 ){
             // Handle a withdrawl request from the user.
             messageType.assign("withdrawresult");
             
             long withdrawl;
             if ( str2int( withdrawl, resp_message.c_str() ) != SUCCESS ){
-                messageBody.assign("REQUEST_ERROR");
+                messageBody.assign("ERROR");
                 err = send_message( messageType, messageBody, resp_type, resp_message, csock );
                 continue;
             }
@@ -315,10 +315,10 @@ void* client_thread(void* arg)
                 std::stringstream sBalance;
                 sBalance << newBalance;
                 messageBody.assign(sBalance.str());
-            } else if( errID == REQUEST_ERROR )
-                messageBody.assign("REQUEST_ERROR");
+            } else if( errID == ERROR )
+                messageBody.assign("ERROR");
             else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
-                messageBody.assign("CRITICAL_ERROR");
+                messageBody.assign("ERROR");
 
         } else if( resp_type.compare("transfer") == 0 ){
             // Handle a transfer request from the user.
@@ -329,7 +329,7 @@ void* client_thread(void* arg)
             amount    = resp_message.substr( (int)resp_message.find("|") + 1, resp_message.length() );
             long transferAmount;
             if ( str2int( transferAmount, amount.c_str() ) != SUCCESS ){
-                messageBody.assign("REQUEST_ERROR");
+                messageBody.assign("ERROR");
                 err = send_message( messageType, messageBody, resp_type, resp_message, csock );
                 continue;
             }
@@ -341,10 +341,10 @@ void* client_thread(void* arg)
                 std::stringstream sBalance;
                 sBalance << newBalance;
                 messageBody.assign(sBalance.str());
-            } else if( errID == REQUEST_ERROR )
-                messageBody.assign("REQUEST_ERROR");
+            } else if( errID == ERROR )
+                messageBody.assign("ERROR");
             else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
-                messageBody.assign("CRITICAL_ERROR");
+                messageBody.assign("ERROR");
         }
         std::cout << messageType << " " << messageBody << std::endl;
         err = send_message( messageType, messageBody, resp_type, resp_message, csock );
@@ -400,7 +400,7 @@ void* console_thread(void* arg)
             if( errID == TRANSACTED )
                 std::cout << "[bank] " << username << " deposited $" << balance 
                           << ", new balance $" << newBalance << "." << std::endl;
-            else if( errID == REQUEST_ERROR )
+            else if( errID == ERROR )
                 std::cout << "[bank] Request failed.\n";
             else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
                 std::cout << "[bank] Critical failure.\n";
@@ -414,7 +414,7 @@ void* console_thread(void* arg)
             if( errID == TRANSACTED )
                 std::cout << "[bank] " << username << " has a balance of $" 
                           << requestedBalance << "." << std::endl;
-            else if( errID == REQUEST_ERROR )
+            else if( errID == ERROR )
                 std::cout << "[bank] Request failed.\n";
             else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
                 std::cout << "[bank] Critical failure.\n";

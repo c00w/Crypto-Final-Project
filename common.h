@@ -24,7 +24,7 @@
 enum STR2INT_ERROR { SUCCESS, S_OVERFLOW, S_UNDERFLOW, INCONVERTIBLE };
 STR2INT_ERROR str2int (long &i, char const *s);
 
-enum TRANSACTION_RESULT { TRANSACTED, REQUEST_ERROR, LOCK_ERROR, UNLOCK_ERROR };
+enum TRANSACTION_RESULT { TRANSACTED, ERROR, LOCK_ERROR, UNLOCK_ERROR };
 
 bool applyHMAC( std::string plain, std::string stringKey, std::string& hashed );
 bool validHMAC( std::string hash, std::string stringKey, std::string plain );
