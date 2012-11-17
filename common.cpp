@@ -227,10 +227,9 @@ int send_aes(std::string& data, std::string& response, int sock, keyinfo & conn_
     try {
         if (conn_info.aes_initialized == false) {
             conn_info.aes_initialized = true;
-            byte iv[CryptoPP::AES::BLOCKSIZE] = "123456789123456";
             CryptoPP::SecByteBlock fukey((byte *)conn_info.aeskey.c_str(), conn_info.aeskey.length());
-            conn_info.aesdecrypt.SetKeyWithIV(fukey, fukey.size(), iv);
-            conn_info.aesencrypt.SetKeyWithIV(fukey, fukey.size(), iv);
+            conn_info.aesdecrypt.SetKeyWithIV(fukey, fukey.size(), (byte *)conn_info.aesiv.c_str());
+            conn_info.aesencrypt.SetKeyWithIV(fukey, fukey.size(), (byte *)conn_info.aesiv.c_str());
         }
         byte ciphertext[data.length()];
         conn_info.aesencrypt.ProcessData(ciphertext, (byte *)data.c_str(), data.length());
@@ -327,5 +326,10 @@ int establish_key(bool server, int csock, keyinfo& conn_info) {
     hmac_key.Update((byte *)key_buff, 32);
     hmac_key.Final((byte *)key_buff);
     conn_info.hmackey.assign(key_buff, 16);
+
+    CryptoPP::SHA512 aes_iv;
+    aes_iv.Update((byte *)key_buff, 32);
+    aes_iv.Final((byte *)key_buff);
+    conn_info.aesiv.assign(key_buff, CryptoPP::AES::BLOCKSIZE);
     return 0;
 }
