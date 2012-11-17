@@ -61,3 +61,4 @@ int send_aes(std::string& data, std::string& response, int sock, keyinfo& conn_i
 
 
 int establish_key(bool server, int csock, keyinfo& conn_info);
+int send_rsa(bool server, std::string& data, std::string& recieved, int sock);

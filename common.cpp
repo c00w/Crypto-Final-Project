@@ -298,7 +298,7 @@ int send_nonce(std::string& data, std::string& response, int sock, keyinfo& conn
 int establish_key(bool server, int csock, keyinfo& conn_info) {
     std::string mydata = readRand(128);
     std::string their_data;
-    int err = send_socket(mydata, their_data, csock);
+    int err = send_rsa(server, mydata, their_data, csock);
     if (err != 0) {
         return -1;
     }
@@ -331,5 +331,18 @@ int establish_key(bool server, int csock, keyinfo& conn_info) {
     aes_iv.Update((byte *)key_buff, 32);
     aes_iv.Final((byte *)key_buff);
     conn_info.aesiv.assign(key_buff, CryptoPP::AES::BLOCKSIZE);
+    return 0;
+}
+
+
+int send_rsa(bool server, std::string& data, std::string& recieved, int sock) {
+
+    //Do RSA Encryption here
+    int err = send_socket(data, recieved, sock);
+    if (err != 0) {
+        return -1;
+    }
+
+    //DO RSA Decryption here
     return 0;
 }
