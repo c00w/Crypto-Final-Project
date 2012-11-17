@@ -27,9 +27,7 @@ void error() {
 }
 
 int error_guard(std::string resp_data) {
-    if( resp_data.compare("REQUEST_ERROR") == 0 ){
-        return 1;
-    } else if( resp_data.compare("CRITICAL_ERROR") == 0 ){
+    if( resp_data.compare("ERROR") == 0 ){
         return 1;
     }
     return 0;

@@ -333,17 +333,17 @@ void* client_thread(void* arg)
                 std::stringstream sBalance;
                 sBalance << requestedBalance;
                 messageBody.assign(sBalance.str());
-            } else if( errID == REQUEST_ERROR )
-                messageBody.assign("REQUEST_ERROR");
+            } else if( errID == ERROR )
+                messageBody.assign("ERROR");
             else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
-                messageBody.assign("CRITICAL_ERROR");
+                messageBody.assign("ERROR");
         } else if( resp_type.compare("withdraw") == 0 ){
             // Handle a withdrawl request from the user.
             messageType.assign("withdrawresult");
             
             long withdrawl;
             if ( str2int( withdrawl, resp_message.c_str() ) != SUCCESS ){
-                messageBody.assign("REQUEST_ERROR");
+                messageBody.assign("ERROR");
                 err = send_message( messageType, messageBody, resp_type, resp_message, csock );
                 continue;
             }
@@ -355,10 +355,10 @@ void* client_thread(void* arg)
                 std::stringstream sBalance;
                 sBalance << newBalance;
                 messageBody.assign(sBalance.str());
-            } else if( errID == REQUEST_ERROR )
-                messageBody.assign("REQUEST_ERROR");
+            } else if( errID == ERROR )
+                messageBody.assign("ERROR");
             else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
-                messageBody.assign("CRITICAL_ERROR");
+                messageBody.assign("ERROR");
 
         } else if( resp_type.compare("transfer") == 0 ){
             // Handle a transfer request from the user.
@@ -369,7 +369,7 @@ void* client_thread(void* arg)
             amount    = resp_message.substr( (int)resp_message.find("|") + 1, resp_message.length() );
             long transferAmount;
             if ( str2int( transferAmount, amount.c_str() ) != SUCCESS ){
-                messageBody.assign("REQUEST_ERROR");
+                messageBody.assign("ERROR");
                 err = send_message( messageType, messageBody, resp_type, resp_message, csock );
                 continue;
             }
@@ -381,10 +381,10 @@ void* client_thread(void* arg)
                 std::stringstream sBalance;
                 sBalance << newBalance;
                 messageBody.assign(sBalance.str());
-            } else if( errID == REQUEST_ERROR )
-                messageBody.assign("REQUEST_ERROR");
+            } else if( errID == ERROR )
+                messageBody.assign("ERROR");
             else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
-                messageBody.assign("CRITICAL_ERROR");
+                messageBody.assign("ERROR");
         }
         std::cout << messageType << " " << messageBody << std::endl;
         err = send_message( messageType, messageBody, resp_type, resp_message, csock );
@@ -440,7 +440,7 @@ void* console_thread(void* arg)
             if( errID == TRANSACTED )
                 std::cout << "[bank] " << username << " deposited $" << balance 
                           << ", new balance $" << newBalance << "." << std::endl;
-            else if( errID == REQUEST_ERROR )
+            else if( errID == ERROR )
                 std::cout << "[bank] Request failed.\n";
             else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
                 std::cout << "[bank] Critical failure.\n";
@@ -454,7 +454,7 @@ void* console_thread(void* arg)
             if( errID == TRANSACTED )
                 std::cout << "[bank] " << username << " has a balance of $" 
                           << requestedBalance << "." << std::endl;
-            else if( errID == REQUEST_ERROR )
+            else if( errID == ERROR )
                 std::cout << "[bank] Request failed.\n";
             else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
                 std::cout << "[bank] Critical failure.\n";

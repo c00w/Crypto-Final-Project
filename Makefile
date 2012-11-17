@@ -9,6 +9,8 @@ bank: bank.cpp common.cpp
 	g++ bank.cpp $(COMMON_FILES) $(FLAGS) -o bank -lpthread -lcrypto++
 proxy:
 	g++ proxy.cpp $(FLAGS) -o proxy -lpthread 
+keygen:
+	g++ keygen.cpp $(FLAGS) -o keygen -lpthread -lcrypto++
 
 clean:
 	rm atm bank proxy
