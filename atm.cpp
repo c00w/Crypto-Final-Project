@@ -164,7 +164,7 @@ int handle_input(std::string & input, int sock) {
         if (error_guard(resp_data) != 0) {
             return 1;
         }
-        std::cout << "[atm] User transferred $" << username.substr(1,username.length()) << " to " << amount
+        std::cout << "[atm] User transferred $" << amount << " to " << amount
                   << ", leaving a final balance of $" << resp_data << "." << std::endl;
 
     } else if (input.substr(0,8).compare("withdraw") == 0) {
