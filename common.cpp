@@ -185,8 +185,8 @@ int send_message(std::string & type, std::string& data, std::string&response_typ
 
     //Send it and get response
     std::string response;
-    //int err = send_nonce(message, response, sock);
-    int err = send_HMAC( message, response, sock );
+    int err = send_nonce(message, response, sock);
+    
     if (err != 0) {
         return err;
     }
@@ -244,7 +244,7 @@ int send_aes(std::string& data, std::string& response, int sock) {
         aesencrypt.ProcessData(ciphertext, (byte *)data.c_str(), data.length());
         data.assign((char* )ciphertext, data.length());
         
-        int err = send_socket(data, response, sock);
+        int err = send_HMAC(data, response, sock);
         
         if (err != 0) {
             return err;
