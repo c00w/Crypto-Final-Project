@@ -231,8 +231,7 @@ int send_aes(std::string& data, std::string& response, int sock, keyinfo & conn_
         if (conn_info.aes_initialized == false) {
             conn_info.aes_initialized = true;
             byte iv[CryptoPP::AES::BLOCKSIZE] = "123456789123456";
-            byte key[32] = "1234567890123456789012345678901";
-            CryptoPP::SecByteBlock fukey(key, 32);
+            CryptoPP::SecByteBlock fukey((byte *)conn_info.aeskey.c_str(), conn_info.aeskey.length());
             conn_info.aesdecrypt.SetKeyWithIV(fukey, fukey.size(), iv);
             conn_info.aesencrypt.SetKeyWithIV(fukey, fukey.size(), iv);
         }
@@ -262,8 +261,6 @@ int send_nonce(std::string& data, std::string& response, int sock, keyinfo& conn
         if (err != 0) {
             return err;
         }
-        //prev_nonce =
-        conn_info.there_nonce.assign("asdasdasd");
     }
     if (data.length() != 0) {
         my_nonce.assign(readRandInt());
@@ -319,8 +316,12 @@ int establish_key(bool server, int csock, keyinfo& conn_info) {
     }
     CryptoPP::SHA512 hash_key;
     hash_key.Update((byte *) data.c_str(), data.length());
-    char session_key_buff[64];
-    hash_key.Final((byte *)session_key_buff);
-    std::string aes_key(session_key_buff, 32);
+    char key_buff[64];
+    hash_key.Final((byte *)key_buff);
+    conn_info.aeskey.assign(key_buff, 32);
+    CryptoPP::SHA512 nonce_key;
+    nonce_key.Update((byte *)key_buff, 32);
+    nonce_key.Final((byte *)key_buff);
+    conn_info.there_nonce.assign(std::to_string(*(int*)key_buff));
     return 0;
 }
