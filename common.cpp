@@ -212,7 +212,6 @@ int send_HMAC( std::string& data, std::string& response, int sock ){
     
     if( data.length() != 0 )
         if( compileHashedMessage( data, key, wrappedData ) != 0 ){
-            std::cout << "Failed hash. br8kspider\n";
             return -1;
         }
     
@@ -220,7 +219,6 @@ int send_HMAC( std::string& data, std::string& response, int sock ){
     if( err != 0 ) return err;
     
     if( extractData( wrappedResponse, key, unwrappedResponse ) != 0 ){
-        std::cout << "Failed unwrap. br8kspider\n";
         return -1;
     }
     
