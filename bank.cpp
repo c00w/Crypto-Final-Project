@@ -282,6 +282,7 @@ void* client_thread(void* arg)
     //input loop
     int err, errID;
 
+    keyinfo conn_info;
     std::string empty("");
     std::string resp_type;
     std::string resp_message;
@@ -289,7 +290,7 @@ void* client_thread(void* arg)
     std::string random = readRand(64);
     std::string sent_salt;
     std::string username;
-    err = send_message(messageBody, messageType, resp_type, resp_message, csock);
+    err = send_message(messageBody, messageType, resp_type, resp_message, csock, conn_info);
 
     while(err == 0)
     {
@@ -344,7 +345,7 @@ void* client_thread(void* arg)
             long withdrawl;
             if ( str2int( withdrawl, resp_message.c_str() ) != SUCCESS ){
                 messageBody.assign("ERROR");
-                err = send_message( messageType, messageBody, resp_type, resp_message, csock );
+                err = send_message( messageType, messageBody, resp_type, resp_message, csock, conn_info);
                 continue;
             }
             
@@ -370,7 +371,7 @@ void* client_thread(void* arg)
             long transferAmount;
             if ( str2int( transferAmount, amount.c_str() ) != SUCCESS ){
                 messageBody.assign("ERROR");
-                err = send_message( messageType, messageBody, resp_type, resp_message, csock );
+                err = send_message( messageType, messageBody, resp_type, resp_message, csock, conn_info);
                 continue;
             }
             
@@ -387,7 +388,7 @@ void* client_thread(void* arg)
                 messageBody.assign("ERROR");
         }
         std::cout << messageType << " " << messageBody << std::endl;
-        err = send_message( messageType, messageBody, resp_type, resp_message, csock );
+        err = send_message( messageType, messageBody, resp_type, resp_message, csock, conn_info);
     }
 
     std::cout << "\n[bank] Client ID #" << csock << " disconnected.\n>bank>";

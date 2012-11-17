@@ -174,7 +174,7 @@ bool extractData( std::string fullMessage, std::string stringKey, std::string& d
     return 0;
 }
 
-int send_message(std::string & type, std::string& data, std::string&response_type, std::string& response_message, int sock){
+int send_message(std::string & type, std::string& data, std::string&response_type, std::string& response_message, int sock, keyinfo & conn_info){
 
     //Construct message
     std::string message(type);
@@ -185,8 +185,8 @@ int send_message(std::string & type, std::string& data, std::string&response_typ
 
     //Send it and get response
     std::string response;
-    //int err = send_nonce(message, response, sock);
-    int err = send_HMAC( message, response, sock );
+    //int err = send_nonce(message, response, sock, conn_info;
+    int err = send_HMAC( message, response, sock, conn_info);
     if (err != 0) {
         return err;
     }
@@ -199,11 +199,7 @@ int send_message(std::string & type, std::string& data, std::string&response_typ
     return 0;
 }
 
-bool initialized = false;
-CryptoPP::CFB_Mode<CryptoPP::AES >::Decryption aesdecrypt;
-CryptoPP::CFB_Mode<CryptoPP::AES >::Encryption aesencrypt;
-
-int send_HMAC( std::string& data, std::string& response, int sock ){
+int send_HMAC( std::string& data, std::string& response, int sock, keyinfo & conn_info ){
     // Attempt to HMAC and send the message
     std::string wrappedData;
     std::string wrappedResponse;
@@ -229,19 +225,19 @@ int send_HMAC( std::string& data, std::string& response, int sock ){
     return 0;
 }
 
-int send_aes(std::string& data, std::string& response, int sock) {
+int send_aes(std::string& data, std::string& response, int sock, keyinfo & conn_info) {
     // Attempt to initialize and send the message.
     try {
-        if (initialized == false) {
-            initialized = true;
+        if (conn_info.aes_initialized == false) {
+            conn_info.aes_initialized = true;
             byte iv[CryptoPP::AES::BLOCKSIZE] = "123456789123456";
             byte key[32] = "1234567890123456789012345678901";
             CryptoPP::SecByteBlock fukey(key, 32);
-            aesdecrypt.SetKeyWithIV(fukey, fukey.size(), iv);
-            aesencrypt.SetKeyWithIV(fukey, fukey.size(), iv);
+            conn_info.aesdecrypt.SetKeyWithIV(fukey, fukey.size(), iv);
+            conn_info.aesencrypt.SetKeyWithIV(fukey, fukey.size(), iv);
         }
         byte ciphertext[data.length()];
-        aesencrypt.ProcessData(ciphertext, (byte *)data.c_str(), data.length());
+        conn_info.aesencrypt.ProcessData(ciphertext, (byte *)data.c_str(), data.length());
         data.assign((char* )ciphertext, data.length());
         
         int err = send_socket(data, response, sock);
@@ -250,7 +246,7 @@ int send_aes(std::string& data, std::string& response, int sock) {
             return err;
         }
         byte plaintext[response.length()];
-        aesdecrypt.ProcessData(plaintext, (byte *)response.c_str(), response.length());
+        conn_info.aesdecrypt.ProcessData(plaintext, (byte *)response.c_str(), response.length());
         response.assign((char *)plaintext, response.length());
     } catch( const CryptoPP::Exception& e) {
         return -1;
@@ -258,28 +254,29 @@ int send_aes(std::string& data, std::string& response, int sock) {
     return 0;
 }
 
-std::string there_nonce("");
-
-int send_nonce(std::string& data, std::string& response, int sock) {
+int send_nonce(std::string& data, std::string& response, int sock, keyinfo & conn_info) {
     // Appending a nonce onto the messages to achieve consistent length.
     std::string my_nonce, new_data;
-    if (there_nonce.length() == 0) {
-        //key = establish_key();
+    if (conn_info.there_nonce.length() == 0) {
+        int err = establish_key(data.length()==0, sock, conn_info);
+        if (err != 0) {
+            return err;
+        }
         //prev_nonce =
-        there_nonce.assign("asdasdasd");
+        conn_info.there_nonce.assign("asdasdasd");
     }
     if (data.length() != 0) {
         my_nonce.assign(readRandInt());
         new_data.assign(my_nonce);
         new_data.append("|");
-        new_data.append(there_nonce);
+        new_data.append(conn_info.there_nonce);
         new_data.append("|");
         new_data.append(data);
     } else {
-       my_nonce.assign(there_nonce);
+       my_nonce.assign(conn_info.there_nonce);
        new_data.assign("");
     }
-    int err = send_aes(new_data, response, sock);
+    int err = send_aes(new_data, response, sock, conn_info);
     if (err != 0) {
         return err;
     }
@@ -290,7 +287,7 @@ int send_nonce(std::string& data, std::string& response, int sock) {
         return -1;
     };
 
-    there_nonce = params.substr(0, sep_pos);
+    conn_info.there_nonce = params.substr(0, sep_pos);
     params.assign(params.substr(sep_pos+1, params.length()-sep_pos));
     sep_pos = params.find('|');
     if (sep_pos == params.npos) {
@@ -305,4 +302,25 @@ int send_nonce(std::string& data, std::string& response, int sock) {
     return 0;
 }
 
-
+int establish_key(bool server, int csock, keyinfo& conn_info) {
+    std::string mydata = readRand(128);
+    std::string their_data;
+    int err = send_socket(mydata, their_data, csock);
+    if (err != 0) {
+        return -1;
+    }
+    std::string data;
+    if (server) {
+        data.assign(mydata);
+        data.append(their_data);
+    } else {
+        data.assign(their_data);
+        data.append(mydata);
+    }
+    CryptoPP::SHA512 hash_key;
+    hash_key.Update((byte *) data.c_str(), data.length());
+    char session_key_buff[64];
+    hash_key.Final((byte *)session_key_buff);
+    std::string aes_key(session_key_buff, 32);
+    return 0;
+}

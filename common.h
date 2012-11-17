@@ -35,7 +35,25 @@ std::string readRand( int desiredBytes );
 
 std::string hashKey( std::string salt, std::string PIN );
 
-int send_message(std::string & type, std::string& data, std::string&response_type, std::string& response_message, int sock);
-int send_nonce(std::string& data, std::string& response, int sock);
-int send_HMAC( std::string& data, std::string& response, int sock );
-int send_aes(std::string& data, std::string& response, int sock);
+struct keyinfo {
+    std::string aeskey;
+    bool aes_initialized;
+    CryptoPP::CFB_Mode<CryptoPP::AES >::Decryption aesdecrypt;
+    CryptoPP::CFB_Mode<CryptoPP::AES >::Encryption aesencrypt;
+    std::string there_nonce;
+
+    keyinfo() {
+        aes_initialized=false;
+        aeskey.assign("");
+        there_nonce.assign("");
+    }
+
+};
+
+int send_message(std::string & type, std::string& data, std::string&response_type, std::string& response_message, int sock, keyinfo& conn_info);
+int send_nonce(std::string& data, std::string& response, int sock, keyinfo& conn_info);
+int send_HMAC( std::string& data, std::string& response, int sock, keyinfo& conn_info );
+int send_aes(std::string& data, std::string& response, int sock, keyinfo& conn_info);
+
+
+int establish_key(bool server, int csock, keyinfo& conn_info);
