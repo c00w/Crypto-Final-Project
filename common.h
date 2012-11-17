@@ -21,6 +21,12 @@
 #include "cryptopp/modes.h"
 #include "cryptopp/aes.h"
 
+#include "bankpub.h"
+#include "atmpub.h"
+
+#include "bankpriv.h"
+#include "atmpriv.h"
+
 enum STR2INT_ERROR { SUCCESS, S_OVERFLOW, S_UNDERFLOW, INCONVERTIBLE };
 STR2INT_ERROR str2int (long &i, char const *s);
 
