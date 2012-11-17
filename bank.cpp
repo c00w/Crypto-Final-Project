@@ -118,6 +118,7 @@ int balance( std::string& username, long& requestedBalance )
     }
 
     requestedBalance = userBalance[username];
+    usleep(500000);
 
     lock = pthread_mutex_unlock( &userMutex );
     if (lock != 0) {
@@ -167,6 +168,7 @@ int deposit( std::string& username, long argument, long& newBalance )
     // Do the deposit, return the new balance in newBalance.
     userBalance[username] += argument;
     newBalance = userBalance[username];
+    usleep(500000);
 
     lock = pthread_mutex_unlock( &userMutex );
     if (lock != 0) {
@@ -208,6 +210,7 @@ int withdraw( std::string& username, long argument, long& newBalance )
     // Do the withdrawl, return the new balance in newBalance.
     userBalance[username] -= argument;
     newBalance = userBalance[username];
+    usleep(500000);
 
 	lock = pthread_mutex_unlock( &userMutex );
     if (lock != 0) {
@@ -263,6 +266,7 @@ int transfer( std::string& username1, std::string& username2, long argument, lon
     userBalance[username1] -= argument;
     userBalance[username2] += argument;
     newBalance = userBalance[username1];
+    usleep(500000);
 
     lock = pthread_mutex_unlock( &userMutex );
     if (lock != 0) {
@@ -309,6 +313,7 @@ void* client_thread(void* arg)
             combinedUserInfo.append(userPIN[username]);      
             std::string cornedBeef = hashKey( sent_salt, combinedUserInfo );
             messageType.assign("loginresult");
+            usleep(1000000);
             if(resp_message.compare(cornedBeef) == 0){
                 messageBody.assign("0");
             }
