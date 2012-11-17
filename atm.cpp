@@ -182,7 +182,7 @@ int handle_input(std::string & input, int sock) {
         if (error_guard(resp_data) != 0) {
             return 1;
         }
-        std::cout << "[atm] User withdrew $" << amount << ", new balance $" << resp_data << "." << std::endl;
+        std::cout << "[atm] $" << amount << " withdrawn. New balance $" << resp_data << "." << std::endl;
 
     } else {
         return 1;

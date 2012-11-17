@@ -261,7 +261,7 @@ int send_aes(std::string& data, std::string& response, int sock) {
 std::string there_nonce("");
 
 int send_nonce(std::string& data, std::string& response, int sock) {
-    // Appending a nonce onto the messages to achieve consistent length.
+    // Noncing the message
     std::string my_nonce, new_data;
     if (there_nonce.length() == 0) {
         //key = establish_key();
