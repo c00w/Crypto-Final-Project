@@ -4,11 +4,10 @@ The protocol for the transfer happens in a number of layers, which are unwrapped
     3. AES layer: encrypts the message using AES.
     4. HMAC layer: hashes the message with a timestamp.
 The initial handshake protocol is as follows:
-    1. Bank produces a blank message so it waits for a response.
-    2. ATM requests a salt from the bank.
-    3. Bank produces the salt and sends it to the bank.
-    4. ATM hashes the input with the salt and sends it to the bank. The input is the user-entered PIN and the account number in the [name].card file.
-    5. Bank hashes the expected input and compares it to what the ATM sent. If they are the same, it passes, and the user is logged in.
+    1. ATM requests a salt from the bank.
+    2. Bank produces the salt and sends it to the ATM.
+    3. ATM hashes the input with the salt and sends it to the bank. The input is the user-entered PIN and the account number in the [name].card file.
+    4. Bank hashes the expected input and compares it to what the ATM sent. If they are the same, it passes, and the user is logged in.
 Login information
     1. Each user has a PIN that gets entered at login.
         Alice   4321
