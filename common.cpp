@@ -1,4 +1,9 @@
 #include "common.h"
+#include "bankpub.h"
+#include "atmpub.h"
+#include "bankpriv.h"
+#include "atmpriv.h"
+
 
 STR2INT_ERROR str2int (long &i, char const *s)
 {

@@ -210,25 +210,25 @@ int main()
 	FILE * bprFile;
 	FILE * bpbFile, *aprFile, *apbFile;
 	bprFile = fopen( "bankpriv.h", "w" );
-	fprintf(bprFile, "char bank_priv[%d] = \"", bpriv.length());
+	fprintf(bprFile, "char bank_priv[%d] = \"", bpriv.length()+1);
 	fprintf(bprFile, "%s", bpriv.c_str());
 	fprintf(bprFile, "\";");
 	fclose(bprFile);
 
 	bpbFile = fopen( "bankpub.h", "w" );
-	fprintf(bpbFile, "char bank_pub[%d] = \"", bpub.length());
+	fprintf(bpbFile, "char bank_pub[%d] = \"", bpub.length()+1);
 	fprintf(bpbFile, "%s", bpub.c_str());
 	fprintf(bpbFile, "\";");
 	fclose(bpbFile);
 
 	aprFile = fopen( "atmpriv.h", "w" );
-	fprintf(aprFile, "char atm_priv[%d] = \"", apriv.length());
+	fprintf(aprFile, "char atm_priv[%d] = \"", apriv.length()+1);
 	fprintf(aprFile, "%s", apriv.c_str());
 	fprintf(aprFile, "\";");
 	fclose(aprFile);
 
 	apbFile = fopen( "atmpub.h", "w" );
-	fprintf(apbFile, "char atm_pub[%d] = \"", apub.length());
+	fprintf(apbFile, "char atm_pub[%d] = \"", apub.length()+1);
 	fprintf(apbFile, "%s", apub.c_str());
 	fprintf(apbFile, "\";");
 	fclose(apbFile);
