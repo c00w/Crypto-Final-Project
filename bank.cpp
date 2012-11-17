@@ -114,7 +114,7 @@ int balance( std::string& username, long& requestedBalance )
         printf( "[bank] Error: nonexistant user.\n" );        
         lock = pthread_mutex_unlock( &userMutex );
         if (lock != 0) exit(1);
-        return REQUEST_ERROR;
+        return ERROR;
     }
 
     requestedBalance = userBalance[username];
@@ -141,13 +141,13 @@ int deposit( std::string& username, long argument, long& newBalance )
         printf( "[bank] Error: nonexistant user.\n" );     
         lock = pthread_mutex_unlock( &userMutex );
         if (lock != 0) exit(1);
-        return REQUEST_ERROR;
+        return ERROR;
     }
     if( argument < 0 ){
         printf( "[bank] Error: cannot deposit negative amounts.\n" );     
         lock = pthread_mutex_unlock( &userMutex );
         if (lock != 0) exit(1);
-        return REQUEST_ERROR;
+        return ERROR;
     }
     long store1 = userBalance[username];
     long store2 = store1;
@@ -155,13 +155,13 @@ int deposit( std::string& username, long argument, long& newBalance )
         printf( "[bank] Error: deposit would cause overflow.\n" );     
         lock = pthread_mutex_unlock( &userMutex );
         if (lock != 0) exit(1);
-        return REQUEST_ERROR;
+        return ERROR;
     }
     if( argument < 0 ){
         printf( "[bank] Error: negative deposit amount.\n" );     
         lock = pthread_mutex_unlock( &userMutex );
         if (lock != 0) exit(1);
-        return REQUEST_ERROR;
+        return ERROR;
     }
 
     // Do the deposit, return the new balance in newBalance.
@@ -190,19 +190,19 @@ int withdraw( std::string& username, long argument, long& newBalance )
         printf( "[bank] Error: nonexistant user.\n" );     
         lock = pthread_mutex_unlock( &userMutex );
         if (lock != 0) exit(1);
-        return REQUEST_ERROR;
+        return ERROR;
     }
     if( argument < 0 ){
         printf( "[bank] Error: cannot deposit negative amounts.\n" );     
         lock = pthread_mutex_unlock( &userMutex );
         if (lock != 0) exit(1);
-        return REQUEST_ERROR;
+        return ERROR;
     }
     if( userBalance[username] < argument ){
         printf( "[bank] Error: cannot withdraw more than is in account.\n" );     
         lock = pthread_mutex_unlock( &userMutex );
         if (lock != 0) exit(1);
-        return REQUEST_ERROR;
+        return ERROR;
     }
 
     // Do the withdrawl, return the new balance in newBalance.
@@ -230,25 +230,25 @@ int transfer( std::string& username1, std::string& username2, long argument, lon
         printf( "[bank] Error: nonexistant user 1.\n" );     
         lock = pthread_mutex_unlock( &userMutex );
         if (lock != 0) exit(1);
-        return REQUEST_ERROR;
+        return ERROR;
     }
     if( userBalance.find( username2 ) == userBalance.end() ){
         printf( "[bank] Error: nonexistant user 2.\n" );     
         lock = pthread_mutex_unlock( &userMutex );
         if (lock != 0) exit(1);
-        return REQUEST_ERROR;
+        return ERROR;
     }
     if( argument < 0 ){
         printf( "[bank] Error: negative transfer amount.\n" );     
         lock = pthread_mutex_unlock( &userMutex );
         if (lock != 0) exit(1);
-        return REQUEST_ERROR;
+        return ERROR;
     }
     if( argument > userBalance[username1] ){
         printf( "[bank] Error: transfer exceeds host user's balance.\n" );     
         lock = pthread_mutex_unlock( &userMutex );
         if (lock != 0) exit(1);
-        return REQUEST_ERROR;
+        return ERROR;
     }
     long store1 = userBalance[username2];
     long store2 = store1;
@@ -256,7 +256,7 @@ int transfer( std::string& username1, std::string& username2, long argument, lon
         printf( "[bank] Error: deposit would cause overflow.\n" );     
         lock = pthread_mutex_unlock( &userMutex );
         if (lock != 0) exit(1);
-        return REQUEST_ERROR;
+        return ERROR;
     }
 
     // Do the transfer, then return the new balance for the first user in newBalance
