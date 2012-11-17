@@ -30,187 +30,230 @@
 #include "cryptopp/osrng.h"
 #include "cryptopp/base64.h"
 #include "cryptopp/queue.h"
+#include "cryptopp/hex.h"
 
-//These are just straight from the cryptopp library
-void SavePrivateKey(const std::string& filename, const CryptoPP::RSA::PrivateKey& key);
-void SavePublicKey(const std::string& filename, const CryptoPP::RSA::PublicKey& key);
-void Save(const std::string& filename, const CryptoPP::BufferedTransformation& bt);
-void LoadPrivateKey(const std::string& filename, CryptoPP::RSA::PrivateKey& key);
-void LoadPublicKey(const std::string& filename, CryptoPP::RSA::PublicKey& key);
-void Load(const std::string& filename, CryptoPP::BufferedTransformation& bt);
 
-int main()
+int bank()
 {
-	/*
-	AutoSeededRandomPool rng;
-
-	InvertibleRSAFunction keys;
-	keys.GenerateRandomWithKeySize(rng, 2048);
-	std::cout << keys.GetValueNames();
-	std::cout << "\n\n\n";
-
-	if(!keys.Validate(rng, 3))
-	{
-		std::cerr << "RSA private key validation failed";
-    	return 1;
-	}
-
-	
-	RSA::PrivateKey privKey;
-	privKey.GenerateRandomWithKeySize(rng, 2048);
-	
-	if(!privKey.Validate(rng, 3))
-		{
-			std::cerr << "RSA private key validation failed";
-			return 1;
-		}
-
-
-	RSAFunction pubKey(privKey);
-
-
-	//Pretty sure that cout is not properly displaying these, they are getting casted as ints?
-	std::cout << "n is: " << privKey.GetModulus() << std::cout << "\n\n\n";
-	std::cout << "Private Exponent is: " << privKey.GetPrivateExponent() 	<< std::cout << "\n\n\n";
-	std::cout << "Public Exponent is: " << privKey.GetPublicExponent() << 	std::cout << "\n\n\n";
-	//std::cout << privKey.GetModulus() << std::endl;
-	//std::cout << privKey.GetModulus() << std::endl;	
-
-	std::cout << "*************************************************************\n\n";
-
-
-	std::cout << "n is: " << keys.GetModulus() << std::cout << "\n\n\n";
-	std::cout << "Private Exponent is: " << keys.GetPrivateExponent() << 	std::cout << "\n\n\n";
-	std::cout << "Public Exponent is: " << keys.GetPublicExponent() << 		std::cout << "\n\n\n";
-
-	std::cout << "Public key e is: " << pubKey.GetPublicExponent() << std::endl;
-	std::cout << "Public Key n is: " << pubKey.GetModulus() << std::endl;
-
-*/
-
 
 	CryptoPP::AutoSeededRandomPool rng;
-/*
-    // Create a private RSA key and write it to a file using DER.
-    CryptoPP::RSAES_OAEP_SHA_Decryptor priv( rng, 4096 );
-    CryptoPP::TransparentFilter privFile( new CryptoPP::FileSink("rsakey.der") );
-    priv.DEREncode( privFile );
-    privFile.MessageEnd();
 
-    // Create a private RSA key and write it to a string using DER (also write to a file to check it with OpenSSL).
-    std::string the_key;
-    CryptoPP::RSAES_OAEP_SHA_Decryptor pri( rng, 2048 );
-    CryptoPP::TransparentFilter privSink( new CryptoPP::StringSink(the_key) );
-    pri.DEREncode( privSink );
-    privSink.MessageEnd();
+	FILE* randFile = fopen("/dev/random", "r");
+    char buffer[16];
+    fgets(buffer, 16, randFile);//Should be reading 128 bits
+    fclose(randFile);
+    
+    std::string bankRandData;
+    bankRandData.assign(buffer, 16);
+/////////// Imaginary Bank /////////////////////////
+	std::string plain, cipher, decrypted;
+	plain = "hello";
+    CryptoPP::RSA::PrivateKey priv;
+	priv.GenerateRandomWithKeySize( rng, 2048 );
+	CryptoPP::RSA::PublicKey pub( priv );
+	CryptoPP::RSASSA_PKCS1v15_SHA_Signer signer(priv);
+	CryptoPP::RSASSA_PKCS1v15_SHA_Verifier verifier(signer);
 
-    std::ofstream file ( "key.der", std::ios::out | std::ios::binary );
-    file.write( the_key.data(), the_key.size() );
-    file.close();
-
-	CryptoPP::RSAES_OAEP_SHA_Encryptor pub( priv );
-	CryptoPP::TransparentFilter pubFile( new CryptoPP::FileSink("pubkey.pb"));
-	pub.DEREncode( pubFile );
-	pubFile.MessageEnd();
-
-	std::string s;
-	CryptoPP::FileSource( "pubkey.pb", true, new StringSink( s ));
-	std::cout << s << std::endl;
-*/
-
-    // Example Encryption & Decryption
-    CryptoPP::InvertibleRSAFunction params;
-    params.GenerateRandomWithKeySize( rng, 1536 );
-
-    std::string plain = "RSA Encryption", cipher, decrypted_data;
+	CryptoPP::RSAES_OAEP_SHA_Encryptor e( pub );
+	CryptoPP::StringSource( bankRandData, true, new CryptoPP::PK_EncryptorFilter( rng, e, new CryptoPP::StringSink( cipher )));
 	
-	
-	
+	CryptoPP::RSAES_OAEP_SHA_Decryptor d( priv );
+	CryptoPP::StringSource( cipher, true, new CryptoPP::PK_DecryptorFilter( rng, d, new CryptoPP::StringSink( decrypted )));
 
-    CryptoPP::RSA::PrivateKey privateKey( params );
-    CryptoPP::RSA::PublicKey publicKey( params );
-
-	SavePrivateKey( "rsaPrivKey.key", privateKey );
-	SavePublicKey( "rsaPubKey.key", publicKey );
-
-
-    CryptoPP::RSAES_OAEP_SHA_Encryptor e( publicKey );
-    CryptoPP::StringSource( plain, true, new CryptoPP::PK_EncryptorFilter( rng, e, new CryptoPP::StringSink( cipher )));
-
-    CryptoPP::RSAES_OAEP_SHA_Decryptor d( privateKey );
-    CryptoPP::StringSource( cipher, true, new CryptoPP::PK_DecryptorFilter( rng, d, new CryptoPP::StringSink( decrypted_data )));
-
-    assert( plain == decrypted_data );
+	std::cout << plain << std::endl;
 
 
 
 
+	std::string signature;
 
+	CryptoPP::StringSource(bankRandData, true, new CryptoPP::SignerFilter(rng, signer,
+		    new CryptoPP::StringSink(signature)
+	   ) 
+	);
 
+	try{
+	CryptoPP::StringSource(bankRandData+signature, true, new CryptoPP::SignatureVerificationFilter(
+		    verifier, NULL, CryptoPP::SignatureVerificationFilter::THROW_EXCEPTION
+	   ) 
+	);
+	} catch( const CryptoPP::Exception& e) {
+        return -1;//Signature failed if it returns -1
+    }
+
+	std::cout << "Verified signature on message" << std::endl;
+
+//////////// End of Bank //////////////////////////////
 
 	return 0;
 }
 
 
-
-
-void SavePublicKey(const std::string& filename, const CryptoPP::RSA::PublicKey& key)
+int atm()
 {
-	// http://www.cryptopp.com/docs/ref/class_byte_queue.html
-	CryptoPP::ByteQueue queue;
-	key.Save(queue);
+	
+	CryptoPP::AutoSeededRandomPool rng;
 
-	Save(filename, queue);
+	FILE* randFile = fopen("/dev/random", "r");
+    char buffer[16];
+    fgets(buffer, 16, randFile);//Should be reading 128 bits
+    fclose(randFile);
+    
+    std::string atmRandData;
+    atmRandData.assign(buffer, 16);
+//////////// Imaginary ATM /////////////////////////////
+
+
+	std::string plain, cipher, decrypted;
+	plain = "hello";
+    CryptoPP::RSA::PrivateKey priv;
+	priv.GenerateRandomWithKeySize( rng, 2048 );
+	CryptoPP::RSA::PublicKey pub( priv );
+	CryptoPP::RSASSA_PKCS1v15_SHA_Signer signer(priv);
+	CryptoPP::RSASSA_PKCS1v15_SHA_Verifier verifier(signer);
+
+	CryptoPP::RSAES_OAEP_SHA_Encryptor e( pub );
+	CryptoPP::StringSource( atmRandData, true, new CryptoPP::PK_EncryptorFilter( rng, e, new CryptoPP::StringSink( cipher )));
+	
+	CryptoPP::RSAES_OAEP_SHA_Decryptor d( priv );
+	CryptoPP::StringSource( cipher, true, new CryptoPP::PK_DecryptorFilter( rng, d, new CryptoPP::StringSink( decrypted )));
+
+	std::cout << plain << std::endl;
+
+
+
+
+	std::string signature;
+
+	CryptoPP::StringSource(atmRandData, true, new CryptoPP::SignerFilter(rng, signer,
+		    new CryptoPP::StringSink(signature)
+	   ) 
+	);
+
+	try{
+	CryptoPP::StringSource(atmRandData+signature, true, new CryptoPP::SignatureVerificationFilter(
+		    verifier, NULL, CryptoPP::SignatureVerificationFilter::THROW_EXCEPTION
+	   ) 
+	);
+	} catch( const CryptoPP::Exception& e) {
+        return -1;//Signature failed if it returns -1
+    }
+
+	std::cout << "Verified signature on message" << std::endl;
+
+/////////// End of ATM //////////////////////////////////	
+
+
+	return 0;
 }
 
-void SavePrivateKey(const std::string& filename, const CryptoPP::RSA::PrivateKey& key)
+int main()
 {
-	// http://www.cryptopp.com/docs/ref/class_byte_queue.html
-	CryptoPP::ByteQueue queue;
-	key.Save(queue);
+	//CryptoPP::AutoSeededRandomPool rng;
+/*
+    // Create a private bank key, encode it with DER (X.507)
+    CryptoPP::RSAES_OAEP_SHA_Decryptor bpriv( rng, 4096 );
+    CryptoPP::TransparentFilter bprivFile( new CryptoPP::FileSink("bankpriv.der",true) );
+    bpriv.DEREncode( bprivFile );
+    bprivFile.MessageEnd();
 
-	Save(filename, queue);
-}
+	// Create banks corresponding public key
+	CryptoPP::RSAES_OAEP_SHA_Encryptor bpub( bpriv );
+	CryptoPP::TransparentFilter bpubFile( new CryptoPP::FileSink("bankpub.der", true));
+	bpub.DEREncode( bpubFile );
+	bpubFile.MessageEnd();
 
-void LoadPrivateKey(const std::string& filename, CryptoPP::RSA::PrivateKey& key)
-{
-	// http://www.cryptopp.com/docs/ref/class_byte_queue.html
-	CryptoPP::ByteQueue queue;
-
-	Load(filename, queue);
-	key.Load(queue);	
-}
-
-void LoadPublicKey(const std::string& filename, CryptoPP::RSA::PublicKey& key)
-{
-	// http://www.cryptopp.com/docs/ref/class_byte_queue.html
-	CryptoPP::ByteQueue queue;
-
-	Load(filename, queue);
-	key.Load(queue);	
-}
+    CryptoPP::RSAES_OAEP_SHA_Decryptor apriv( rng, 4096 );
+    CryptoPP::TransparentFilter aprivFile( new CryptoPP::FileSink("atmpriv.der",true) );
+    apriv.DEREncode( aprivFile );
+    aprivFile.MessageEnd();
 
 
+	CryptoPP::RSAES_OAEP_SHA_Encryptor apub( apriv );
+	CryptoPP::TransparentFilter apubFile( new CryptoPP::FileSink("atmpub.der", true));
+	apub.DEREncode( apubFile );
+	apubFile.MessageEnd();
+*/
 
-void Save(const std::string& filename, const CryptoPP::BufferedTransformation& bt)
-{
-	// http://www.cryptopp.com/docs/ref/class_file_sink.html
-	CryptoPP::FileSink file(filename.c_str());
+	CryptoPP::AutoSeededRandomPool rng2;
 
-	bt.CopyTo(file);
-	file.MessageEnd();
-}
+	CryptoPP::RSA::PrivateKey bankPriv;
+	bankPriv.GenerateRandomWithKeySize( rng2, 2048 );
+	CryptoPP::RSA::PublicKey bankPub( bankPriv );
 
-void Load(const std::string& filename, CryptoPP::BufferedTransformation& bt)
-{
-	// http://www.cryptopp.com/docs/ref/class_file_source.html
-	CryptoPP::FileSource file(filename.c_str(), true /*pumpAll*/);
+	CryptoPP::RSA::PrivateKey atmPriv;
+	atmPriv.GenerateRandomWithKeySize( rng2, 2048 );
+	CryptoPP::RSA::PublicKey atmPub( atmPriv );
 
-	file.TransferTo(bt);
-	bt.MessageEnd();
-}
+	std::string bpriv,bpub,apriv,apub;
+    //CryptoPP::TransparentFilter bprivSink( new CryptoPP::StringSink(bpriv) );
+    CryptoPP::HexEncoder bprivSink(new CryptoPP::StringSink(bpriv));    
+	bankPriv.DEREncode( bprivSink );
+    bprivSink.MessageEnd();
+
+	
+    CryptoPP::HexEncoder bpubSink( new CryptoPP::StringSink(bpriv) );
+    bankPub.DEREncode( bpubSink );
+    bpubSink.MessageEnd();
+
+	
+    CryptoPP::HexEncoder aprivSink( new CryptoPP::StringSink(bpriv) );
+    atmPriv.DEREncode( aprivSink );
+    aprivSink.MessageEnd();
+
+	
+    CryptoPP::HexEncoder apubSink( new CryptoPP::StringSink(bpriv) );
+    atmPub.DEREncode( apubSink );
+    apubSink.MessageEnd();
 
 
+	FILE * bprFile;
+	FILE * bpbFile, *aprFile, *apbFile;
+	bprFile = fopen( "bankpriv.h", "w" );
+	fprintf(bprFile, "char bank_priv[%d] = \"", bpriv.length());
+	fprintf(bprFile, "%s", bpriv.c_str());
+	fprintf(bprFile, "\";");
+	fclose(bprFile);
+
+	bpbFile = fopen( "bankpub.h", "w" );
+	fprintf(bpbFile, "char bank_pub[%d] = \"", bpub.length());
+	fprintf(bpbFile, "%s", bpub.c_str());
+	fprintf(bpbFile, "\";");
+	fclose(bpbFile);
+
+	aprFile = fopen( "atmpriv.h", "w" );
+	fprintf(aprFile, "char atm_priv[%d] = \"", apriv.length());
+	fprintf(aprFile, "%s", apriv.c_str());
+	fprintf(aprFile, "\";");
+	fclose(aprFile);
+
+	apbFile = fopen( "atmpub.h", "w" );
+	fprintf(apbFile, "char atm_pub[%d] = \"", apub.length());
+	fprintf(apbFile, "%s", apub.c_str());
+	fprintf(apbFile, "\";");
+	fclose(apbFile);
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	//bank();
+	//atm();
+
+	return 0;
+} 
 
 
 
@@ -222,12 +265,4 @@ void Load(const std::string& filename, CryptoPP::BufferedTransformation& bt)
 // try 16384 for RSA key size
 // else try 8192
 
-
-/* The commented out zone
-
-
-
-
-
-
-*/
+//byte[2048] = "key strings"
