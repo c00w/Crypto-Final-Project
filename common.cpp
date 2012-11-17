@@ -338,11 +338,13 @@ int establish_key(bool server, int csock, keyinfo& conn_info) {
 int send_rsa(bool server, std::string& data, std::string& recieved, int sock) {
 
     //Do RSA Encryption here
+
     int err = send_socket(data, recieved, sock);
     if (err != 0) {
         return -1;
     }
 
     //DO RSA Decryption here
+
     return 0;
 }
