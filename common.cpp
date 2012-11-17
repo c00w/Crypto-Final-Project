@@ -199,22 +199,21 @@ int send_message(std::string & type, std::string& data, std::string&response_typ
     return 0;
 }
 
-int send_HMAC( std::string& data, std::string& response, int sock, keyinfo & conn_info ){
+int send_HMAC( std::string& data, std::string& response, int sock, keyinfo &conn_info ){
     // Attempt to HMAC and send the message
     std::string wrappedData;
     std::string wrappedResponse;
     std::string unwrappedResponse;
-    std::string key = "1234567890123456";
     
     if( data.length() != 0 )
-        if( compileHashedMessage( data, key, wrappedData ) != 0 ){
+        if( compileHashedMessage( data, conn_info.hmackey, wrappedData ) != 0 ){
             return -1;
         }
     
     int err = send_socket( wrappedData, wrappedResponse, sock );
     if( err != 0 ) return err;
     
-    if( extractData( wrappedResponse, key, unwrappedResponse ) != 0 ){
+    if( extractData( wrappedResponse, conn_info.hmackey, unwrappedResponse ) != 0 ){
         return -1;
     }
     
