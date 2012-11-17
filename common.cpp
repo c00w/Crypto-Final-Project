@@ -185,8 +185,8 @@ int send_message(std::string & type, std::string& data, std::string&response_typ
 
     //Send it and get response
     std::string response;
-    //int err = send_nonce(message, response, sock, conn_info;
-    int err = send_HMAC( message, response, sock, conn_info);
+    int err = send_nonce(message, response, sock, conn_info);
+    
     if (err != 0) {
         return err;
     }
@@ -240,7 +240,7 @@ int send_aes(std::string& data, std::string& response, int sock, keyinfo & conn_
         conn_info.aesencrypt.ProcessData(ciphertext, (byte *)data.c_str(), data.length());
         data.assign((char* )ciphertext, data.length());
         
-        int err = send_socket(data, response, sock);
+        int err = send_HMAC(data, response, sock, conn_info);
         
         if (err != 0) {
             return err;
@@ -254,8 +254,8 @@ int send_aes(std::string& data, std::string& response, int sock, keyinfo & conn_
     return 0;
 }
 
-int send_nonce(std::string& data, std::string& response, int sock, keyinfo & conn_info) {
-    // Appending a nonce onto the messages to achieve consistent length.
+int send_nonce(std::string& data, std::string& response, int sock, keyinfo& conn_info) {
+    // Noncing the message
     std::string my_nonce, new_data;
     if (conn_info.there_nonce.length() == 0) {
         int err = establish_key(data.length()==0, sock, conn_info);
