@@ -37,6 +37,7 @@ std::string hashKey( std::string salt, std::string PIN );
 
 struct keyinfo {
     std::string aeskey;
+    std::string hmackey;
     bool aes_initialized;
     CryptoPP::CFB_Mode<CryptoPP::AES >::Decryption aesdecrypt;
     CryptoPP::CFB_Mode<CryptoPP::AES >::Encryption aesencrypt;
