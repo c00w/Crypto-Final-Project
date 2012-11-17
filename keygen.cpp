@@ -192,17 +192,17 @@ int main()
     bprivSink.MessageEnd();
 
 	
-    CryptoPP::HexEncoder bpubSink( new CryptoPP::StringSink(bpriv) );
+    CryptoPP::HexEncoder bpubSink( new CryptoPP::StringSink(bpub) );
     bankPub.DEREncode( bpubSink );
     bpubSink.MessageEnd();
 
 	
-    CryptoPP::HexEncoder aprivSink( new CryptoPP::StringSink(bpriv) );
+    CryptoPP::HexEncoder aprivSink( new CryptoPP::StringSink(apriv) );
     atmPriv.DEREncode( aprivSink );
     aprivSink.MessageEnd();
 
 	
-    CryptoPP::HexEncoder apubSink( new CryptoPP::StringSink(bpriv) );
+    CryptoPP::HexEncoder apubSink( new CryptoPP::StringSink(apub) );
     atmPub.DEREncode( apubSink );
     apubSink.MessageEnd();
 
@@ -232,21 +232,6 @@ int main()
 	fprintf(apbFile, "%s", apub.c_str());
 	fprintf(apbFile, "\";");
 	fclose(apbFile);
-
-	
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 	//bank();
