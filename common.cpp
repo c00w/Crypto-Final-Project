@@ -311,14 +311,21 @@ int establish_key(bool server, int csock, keyinfo& conn_info) {
         data.assign(their_data);
         data.append(mydata);
     }
+
     CryptoPP::SHA512 hash_key;
     hash_key.Update((byte *) data.c_str(), data.length());
     char key_buff[64];
     hash_key.Final((byte *)key_buff);
     conn_info.aeskey.assign(key_buff, 32);
+
     CryptoPP::SHA512 nonce_key;
     nonce_key.Update((byte *)key_buff, 32);
     nonce_key.Final((byte *)key_buff);
     conn_info.there_nonce.assign(std::to_string(*(int*)key_buff));
+
+    CryptoPP::SHA512 hmac_key;
+    hmac_key.Update((byte *)key_buff, 32);
+    hmac_key.Final((byte *)key_buff);
+    conn_info.hmackey.assign(key_buff, 16);
     return 0;
 }

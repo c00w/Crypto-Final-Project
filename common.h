@@ -47,6 +47,7 @@ struct keyinfo {
         aes_initialized=false;
         aeskey.assign("");
         there_nonce.assign("");
+        hmackey.assign("");
     }
 
 };
