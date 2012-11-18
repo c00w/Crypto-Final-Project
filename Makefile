@@ -1,4 +1,4 @@
-FLAGS = -m32 -g -Wall -std=c++0x
+FLAGS = -m32 -g -Wall -std=c++0x -O3
 COMMON_FILES = common.cpp
 
 all: atm bank proxy

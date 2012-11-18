@@ -228,7 +228,10 @@ int main(int argc, char* argv[])
     while(1)
     {
         printf(">atm> ");
-        fgets(buf, 79, stdin);
+        char * res = fgets(buf, 79, stdin);
+        if (res == NULL) {
+            break;
+        }
         buf[strlen(buf)-1] = '\0';  //trim off trailing newline
 
         //Upcast string

@@ -43,7 +43,10 @@ std::string readRand( int desiredBytes )
 {
     FILE* file = fopen("/dev/urandom", "r");
     char buffer[desiredBytes];
-    fgets(buffer, desiredBytes, file);
+    char * res = fgets(buffer, desiredBytes, file);
+    if (res == NULL) {
+        exit(1);
+    }
     fclose(file);
 
     std::string randomString;
@@ -55,7 +58,10 @@ std::string readRandInt()
 {
     FILE* file = fopen("/dev/urandom", "r");
     int result;
-    fgets((char *)&result, sizeof(int), file);
+    char * res = fgets((char *)&result, sizeof(int), file);
+    if (res == NULL) {
+        exit(1);
+    }
     fclose(file);
 
     return std::to_string(result);
