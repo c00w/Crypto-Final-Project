@@ -109,6 +109,7 @@ int balance( std::string& username, long& requestedBalance )
         return LOCK_ERROR;
     }
     
+    usleep(500000);
     // Gets the users balance, returns in requestedBalance.
     if( userBalance.find( username ) == userBalance.end() ){
         printf( "[bank] Error: nonexistant user.\n" );        
@@ -118,7 +119,6 @@ int balance( std::string& username, long& requestedBalance )
     }
 
     requestedBalance = userBalance[username];
-    usleep(500000);
 
     lock = pthread_mutex_unlock( &userMutex );
     if (lock != 0) {
@@ -137,6 +137,7 @@ int deposit( std::string& username, long argument, long& newBalance )
         return LOCK_ERROR;
     }
 
+    usleep(500000);
     // Verify that the input is acceptable.
     if( userBalance.find( username ) == userBalance.end() ){
         printf( "[bank] Error: nonexistant user.\n" );     
@@ -168,7 +169,6 @@ int deposit( std::string& username, long argument, long& newBalance )
     // Do the deposit, return the new balance in newBalance.
     userBalance[username] += argument;
     newBalance = userBalance[username];
-    usleep(500000);
 
     lock = pthread_mutex_unlock( &userMutex );
     if (lock != 0) {
@@ -187,6 +187,7 @@ int withdraw( std::string& username, long argument, long& newBalance )
         return LOCK_ERROR;
     }
 
+    usleep(500000);
     // Verify that the input is acceptable.
     if( userBalance.find( username ) == userBalance.end() ){
         printf( "[bank] Error: nonexistant user.\n" );     
@@ -210,7 +211,6 @@ int withdraw( std::string& username, long argument, long& newBalance )
     // Do the withdrawl, return the new balance in newBalance.
     userBalance[username] -= argument;
     newBalance = userBalance[username];
-    usleep(500000);
 
 	lock = pthread_mutex_unlock( &userMutex );
     if (lock != 0) {
@@ -228,6 +228,7 @@ int transfer( std::string& username1, std::string& username2, long argument, lon
         return LOCK_ERROR;
     }
 
+    usleep(500000);
     // Verify that the input is acceptable
     if( userBalance.find( username1 ) == userBalance.end() ){
         printf( "[bank] Error: nonexistant user 1.\n" );     
@@ -266,7 +267,6 @@ int transfer( std::string& username1, std::string& username2, long argument, lon
     userBalance[username1] -= argument;
     userBalance[username2] += argument;
     newBalance = userBalance[username1];
-    usleep(500000);
 
     lock = pthread_mutex_unlock( &userMutex );
     if (lock != 0) {
