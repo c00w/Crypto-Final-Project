@@ -108,7 +108,6 @@ bool applyHMAC( std::string plain, std::string stringKey, std::string& hashed ) 
         CryptoPP::StringSource( plain, true,
                                 new CryptoPP::HashFilter( cornedBeef, new CryptoPP::StringSink(mac) ) );
     } catch( const CryptoPP::Exception& e ) {
-        std::cerr << "[8R8K] D::::\n";
         return 1;
     }
 
@@ -301,12 +300,10 @@ int send_nonce(std::string data, std::string& response, int sock, keyinfo& conn_
 }
 
 int establish_key(bool server, int csock, keyinfo& conn_info) {
-    std::cerr << "\n\n//\nBR8K\n\\\\\n\n";
     std::string mydata = readRand(128);
     std::string their_data;
     int err = send_rsa(server, mydata, their_data, csock);
     if (err != 0) {
-        std::cerr << "SHIT GOT FUCKED\n";
         return -1;
     }
     std::string data;
@@ -339,15 +336,12 @@ int establish_key(bool server, int csock, keyinfo& conn_info) {
     aes_iv.Final((byte *)key_buff);
     conn_info.aesiv.assign(key_buff, CryptoPP::AES::BLOCKSIZE);
     
-    std::cerr << "Nonce: " << conn_info.there_nonce << "\n\n";
-    
     return 0;
 }
 
 
 int send_rsa(bool server, std::string data, std::string& recieved, int sock) {
 	
-	std::cerr << "Nothing has been done yet.\n";
 	CryptoPP::AutoSeededRandomPool rng;
     //Do RSA Encryption here
    
@@ -413,8 +407,6 @@ int send_rsa(bool server, std::string data, std::string& recieved, int sock) {
 	
 	  }
 
-    std::cerr << "And here we are stating this bad boy off.\n";
-	
 	CryptoPP::RSASS<CryptoPP::PSSR, CryptoPP::SHA1>::Signer signer( my_priv );
 
 	//Run the data through the RSA encryption
@@ -437,7 +429,6 @@ int send_rsa(bool server, std::string data, std::string& recieved, int sock) {
 
     int err = send_socket(data, recieved, sock);
     if (err != 0) {
-        std::cerr << "My sockets crashed\n";
         return -1;
     }
 
