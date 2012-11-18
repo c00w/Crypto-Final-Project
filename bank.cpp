@@ -298,7 +298,6 @@ void* client_thread(void* arg)
 
     while(err == 0)
     {
-        std::cout << resp_type << " " << resp_message << std::endl;
         // Initial setting up the connection.
         if( resp_type.compare("getsalt") == 0 ) {
             // Getting the salt.
@@ -392,7 +391,6 @@ void* client_thread(void* arg)
             else if( errID == LOCK_ERROR || errID == UNLOCK_ERROR )
                 messageBody.assign("ERROR");
         }
-        std::cout << messageType << " " << messageBody << std::endl;
         err = send_message( messageType, messageBody, resp_type, resp_message, csock, conn_info);
     }
 
