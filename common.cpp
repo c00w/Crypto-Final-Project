@@ -345,21 +345,22 @@ int establish_key(bool server, int csock, keyinfo& conn_info) {
 }
 
 
-int send_rsa(bool server, std::string& data, std::string& recieved, int sock) {
+int send_rsa(bool server, std::string data, std::string& recieved, int sock) {
 	
 	std::cerr << "Nothing has been done yet.\n";
 	CryptoPP::AutoSeededRandomPool rng;
     //Do RSA Encryption here
    
 	std::string plain, encrypted, decrypted, signature, recovered, tdecoded;
-	plain = "helloworld";
+    bool result;
 
 	CryptoPP::RSAES_OAEP_SHA_Encryptor other_pub;
+	CryptoPP::RSAES_OAEP_SHA_Encryptor my_pub;
     CryptoPP::RSAES_OAEP_SHA_Decryptor my_priv;
 
 	if(server)
 	{
-		{
+	    {
 		    CryptoPP::HexDecoder decoder;
 		    decoder.Put( (byte*)bank_priv, bank_priv_size );
 		    decoder.MessageEnd();
@@ -375,10 +376,26 @@ int send_rsa(bool server, std::string& data, std::string& recieved, int sock) {
 
 	        other_pub.AccessKey().Load( decoder );
 	    }
+	    {
+
+	        CryptoPP::HexDecoder decoder;
+	        decoder.Put( (byte*)bank_pub, bank_pub_size);
+	        decoder.MessageEnd();
+
+	        my_pub.AccessKey().Load( decoder );
+	    }
+
 
 	 }
 	 else
 	 {
+        {
+	        CryptoPP::HexDecoder decoder;
+	        decoder.Put( (byte*)atm_pub, atm_pub_size);
+	        decoder.MessageEnd();
+
+	        my_pub.AccessKey().Load( decoder );
+	    }
 	    {
 	        CryptoPP::HexDecoder decoder;
 	        decoder.Put( (byte*)bank_pub, bank_pub_size );
@@ -404,42 +421,70 @@ int send_rsa(bool server, std::string& data, std::string& recieved, int sock) {
 	CryptoPP::StringSource( data, true, new CryptoPP::PK_EncryptorFilter( rng, other_pub, new CryptoPP::StringSink( encrypted )));
 	
 	//Sign the encrypted data	
-	//CryptoPP::StringSource(encrypted, true, new CryptoPP::SignerFilter(rng, signer, new CryptoPP::StringSink(signature), true)); 
+    size_t length = signer.MaxSignatureLength(); 
+    byte sig_buff[length];
 
-    CryptoPP::StringSource(plain, true, new CryptoPP::SignerFilter(rng, signer, new CryptoPP::StringSink(signature)));
+    signer.SignMessage(rng, (byte *)encrypted.c_str(), encrypted.length(), sig_buff);
+    signature.assign((char *)sig_buff, length);
 
-       data.assign(signature);
-        std::cerr << "Here we are before the socket things.\n";
-        int err = send_socket(data, recieved, sock);
-        if (err != 0) {
-            std::cerr << "My sockets crashed\n";
-            return -1;
-        }
+	CryptoPP::RSASS<CryptoPP::PSSR, CryptoPP::SHA1>::Verifier verifiermine( my_pub);
+    //bool result =  verifiermine.VerifyMessage((byte *)encrypted.c_str(), encrypted.length(), (byte *)signature.c_str(), signature.length());
+    //if(result == false) {
+    //    std::cout << "bad sig locally";
+    //    return -1;
+    //}
 
-        std::cerr << "Made it past socket";
+    //CryptoPP::StringSource(plain, true, new CryptoPP::SignerFilter(rng, signer, new CryptoPP::StringSink(signature)));
+
+    data.assign(std::to_string(signature.length()));
+    data.append("|");
+    data.append(signature);
+    data.append(encrypted);
+
+    std::cout << encrypted.length() << " " << signature.length() << std::endl;
+
+    int err = send_socket(data, recieved, sock);
+    if (err != 0) {
+        std::cerr << "My sockets crashed\n";
+        return -1;
+    }
+
+    if (recieved.find("|") == recieved.npos) {
+        return -1;
+    }
+    int sig_length = atoi(recieved.substr(0, recieved.find("|")).c_str());
+    if (sig_length == 0) {
+        return -1;
+    }
+    if (recieved.length() < sig_length + recieved.find("|")+1) {
+        return -1;
+    }
+    recieved = recieved.substr(recieved.find("|")+1, recieved.length()-recieved.find("|")-1);
+    std::string other_signature = recieved.substr(0, sig_length);
+    std::cout << "signature ok" << std::endl;
+    std::cout << sig_length << " "<< recieved.length() << std::endl;
+    std::string other_encrypted = recieved.substr(sig_length, recieved.length() - sig_length);
+    std::cerr << "Made it past socket";
+    std::cout << other_encrypted.length() << other_signature.length() << std::endl;
+    if (other_signature.length() != (unsigned int)sig_length) {
+        std::cout << "sig length doesn't match expected" << std::endl;
+    }
 
 	CryptoPP::RSASS<CryptoPP::PSSR, CryptoPP::SHA1>::Verifier verifier( other_pub );
 
-
- 	try{CryptoPP::StringSource(plain+recieved, true, new CryptoPP::SignatureVerificationFilter( verifier, new CryptoPP::StringSink(recovered), CryptoPP::SignatureVerificationFilter::THROW_EXCEPTION | CryptoPP::SignatureVerificationFilter::PUT_MESSAGE));
-	} catch( const CryptoPP::Exception& e) 
+    result = verifier.VerifyMessage((byte *)other_encrypted.c_str(), other_encrypted.length(), (byte *)other_signature.c_str(), other_signature.length());
+    if (result == false)
 	{
 	    std::cerr << "This is a bad signature.\n";
         return -1;//Signature failed if it returns -1
     }
-    
+    std::cout << "Everything worked!!!" << std::endl;  
 
-    data.assign(encrypted);
-    std::cerr << "Here we are before the SECOND socket things.\n";
-    int err2 = send_socket(data, recieved, sock);
-    if (err2 != 0) {
-        std::cerr << "My SECOND sockets crashed\n";
-        return -1;
-    }
+	CryptoPP::StringSource( other_encrypted, true, new CryptoPP::PK_DecryptorFilter( rng, my_priv, new CryptoPP::StringSink( decrypted )));
 
-    std::cerr << "Made it past SECOND socket";    
-
-	CryptoPP::StringSource( recieved, true, new CryptoPP::PK_DecryptorFilter( rng, my_priv, new CryptoPP::StringSink( decrypted )));
+    recieved.assign(decrypted);
+    std::cout << data << std::endl;
+    std::cout << recieved << std::endl;
     //Little confused as to what is being used here, data is ?_?
     return 0;
 }
