@@ -61,7 +61,7 @@ std::string readRandInt()
     return std::to_string(result);
 }
 
-int send_socket(std::string& data, std::string& recieved, int sock) {
+int send_socket(std::string data, std::string& recieved, int sock) {
 
     size_t length = data.length();
     const char * packet = data.c_str();
@@ -179,7 +179,7 @@ bool extractData( std::string fullMessage, std::string stringKey, std::string& d
     return 0;
 }
 
-int send_message(std::string & type, std::string& data, std::string&response_type, std::string& response_message, int sock, keyinfo & conn_info){
+int send_message(std::string & type, std::string data, std::string&response_type, std::string& response_message, int sock, keyinfo & conn_info){
 
     //Construct message
     std::string message(type);
@@ -204,7 +204,7 @@ int send_message(std::string & type, std::string& data, std::string&response_typ
     return 0;
 }
 
-int send_HMAC( std::string& data, std::string& response, int sock, keyinfo &conn_info ){
+int send_HMAC( std::string data, std::string& response, int sock, keyinfo &conn_info ){
     // Attempt to HMAC and send the message
     std::string wrappedData;
     std::string wrappedResponse;
@@ -227,7 +227,7 @@ int send_HMAC( std::string& data, std::string& response, int sock, keyinfo &conn
     return 0;
 }
 
-int send_aes(std::string& data, std::string& response, int sock, keyinfo & conn_info) {
+int send_aes(std::string data, std::string& response, int sock, keyinfo & conn_info) {
     // Attempt to initialize and send the message.
     try {
         if (conn_info.aes_initialized == false) {
@@ -254,7 +254,7 @@ int send_aes(std::string& data, std::string& response, int sock, keyinfo & conn_
     return 0;
 }
 
-int send_nonce(std::string& data, std::string& response, int sock, keyinfo& conn_info) {
+int send_nonce(std::string data, std::string& response, int sock, keyinfo& conn_info) {
     // Noncing the message
     std::string my_nonce, new_data;
     if (conn_info.there_nonce.length() == 0) {

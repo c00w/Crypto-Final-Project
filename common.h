@@ -61,10 +61,10 @@ struct keyinfo {
 
 };
 
-int send_message(std::string & type, std::string& data, std::string&response_type, std::string& response_message, int sock, keyinfo& conn_info);
-int send_nonce(std::string& data, std::string& response, int sock, keyinfo& conn_info);
-int send_HMAC( std::string& data, std::string& response, int sock, keyinfo& conn_info );
-int send_aes(std::string& data, std::string& response, int sock, keyinfo& conn_info);
+int send_message(std::string & type, std::string data, std::string&response_type, std::string& response_message, int sock, keyinfo& conn_info);
+int send_nonce(std::string data, std::string& response, int sock, keyinfo& conn_info);
+int send_HMAC( std::string data, std::string& response, int sock, keyinfo& conn_info );
+int send_aes(std::string data, std::string& response, int sock, keyinfo& conn_info);
 
 
 int establish_key(bool server, int csock, keyinfo& conn_info);
