@@ -20,6 +20,13 @@
 #include "cryptopp/sha.h"
 #include "cryptopp/modes.h"
 #include "cryptopp/aes.h"
+#include "cryptopp/rsa.h"
+#include "cryptopp/randpool.h"
+#include "cryptopp/rng.h"
+#include "cryptopp/osrng.h"
+#include "cryptopp/filters.h"
+#include "cryptopp/pssr.h"
+#include "cryptopp/sha.h"
 
 enum STR2INT_ERROR { SUCCESS, S_OVERFLOW, S_UNDERFLOW, INCONVERTIBLE };
 STR2INT_ERROR str2int (long &i, char const *s);

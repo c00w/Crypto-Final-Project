@@ -33,147 +33,9 @@
 #include "cryptopp/hex.h"
 
 
-int bank()
-{
-
-	CryptoPP::AutoSeededRandomPool rng;
-
-	FILE* randFile = fopen("/dev/random", "r");
-    char buffer[16];
-    fgets(buffer, 16, randFile);//Should be reading 128 bits
-    fclose(randFile);
-    
-    std::string bankRandData;
-    bankRandData.assign(buffer, 16);
-/////////// Imaginary Bank /////////////////////////
-	std::string plain, cipher, decrypted;
-	plain = "hello";
-    CryptoPP::RSA::PrivateKey priv;
-	priv.GenerateRandomWithKeySize( rng, 2048 );
-	CryptoPP::RSA::PublicKey pub( priv );
-	CryptoPP::RSASSA_PKCS1v15_SHA_Signer signer(priv);
-	CryptoPP::RSASSA_PKCS1v15_SHA_Verifier verifier(signer);
-
-	CryptoPP::RSAES_OAEP_SHA_Encryptor e( pub );
-	CryptoPP::StringSource( bankRandData, true, new CryptoPP::PK_EncryptorFilter( rng, e, new CryptoPP::StringSink( cipher )));
-	
-	CryptoPP::RSAES_OAEP_SHA_Decryptor d( priv );
-	CryptoPP::StringSource( cipher, true, new CryptoPP::PK_DecryptorFilter( rng, d, new CryptoPP::StringSink( decrypted )));
-
-	std::cout << plain << std::endl;
-
-
-
-
-	std::string signature;
-
-	CryptoPP::StringSource(bankRandData, true, new CryptoPP::SignerFilter(rng, signer,
-		    new CryptoPP::StringSink(signature)
-	   ) 
-	);
-
-	try{
-	CryptoPP::StringSource(bankRandData+signature, true, new CryptoPP::SignatureVerificationFilter(
-		    verifier, NULL, CryptoPP::SignatureVerificationFilter::THROW_EXCEPTION
-	   ) 
-	);
-	} catch( const CryptoPP::Exception& e) {
-        return -1;//Signature failed if it returns -1
-    }
-
-	std::cout << "Verified signature on message" << std::endl;
-
-//////////// End of Bank //////////////////////////////
-
-	return 0;
-}
-
-
-int atm()
-{
-	
-	CryptoPP::AutoSeededRandomPool rng;
-
-	FILE* randFile = fopen("/dev/random", "r");
-    char buffer[16];
-    fgets(buffer, 16, randFile);//Should be reading 128 bits
-    fclose(randFile);
-    
-    std::string atmRandData;
-    atmRandData.assign(buffer, 16);
-//////////// Imaginary ATM /////////////////////////////
-
-
-	std::string plain, cipher, decrypted;
-	plain = "hello";
-    CryptoPP::RSA::PrivateKey priv;
-	priv.GenerateRandomWithKeySize( rng, 2048 );
-	CryptoPP::RSA::PublicKey pub( priv );
-	CryptoPP::RSASSA_PKCS1v15_SHA_Signer signer(priv);
-	CryptoPP::RSASSA_PKCS1v15_SHA_Verifier verifier(signer);
-
-	CryptoPP::RSAES_OAEP_SHA_Encryptor e( pub );
-	CryptoPP::StringSource( atmRandData, true, new CryptoPP::PK_EncryptorFilter( rng, e, new CryptoPP::StringSink( cipher )));
-	
-	CryptoPP::RSAES_OAEP_SHA_Decryptor d( priv );
-	CryptoPP::StringSource( cipher, true, new CryptoPP::PK_DecryptorFilter( rng, d, new CryptoPP::StringSink( decrypted )));
-
-	std::cout << plain << std::endl;
-
-
-
-
-	std::string signature;
-
-	CryptoPP::StringSource(atmRandData, true, new CryptoPP::SignerFilter(rng, signer,
-		    new CryptoPP::StringSink(signature)
-	   ) 
-	);
-
-	try{
-	CryptoPP::StringSource(atmRandData+signature, true, new CryptoPP::SignatureVerificationFilter(
-		    verifier, NULL, CryptoPP::SignatureVerificationFilter::THROW_EXCEPTION
-	   ) 
-	);
-	} catch( const CryptoPP::Exception& e) {
-        return -1;//Signature failed if it returns -1
-    }
-
-	std::cout << "Verified signature on message" << std::endl;
-
-/////////// End of ATM //////////////////////////////////	
-
-
-	return 0;
-}
-
 int main()
 {
-	//CryptoPP::AutoSeededRandomPool rng;
-/*
-    // Create a private bank key, encode it with DER (X.507)
-    CryptoPP::RSAES_OAEP_SHA_Decryptor bpriv( rng, 4096 );
-    CryptoPP::TransparentFilter bprivFile( new CryptoPP::FileSink("bankpriv.der",true) );
-    bpriv.DEREncode( bprivFile );
-    bprivFile.MessageEnd();
 
-	// Create banks corresponding public key
-	CryptoPP::RSAES_OAEP_SHA_Encryptor bpub( bpriv );
-	CryptoPP::TransparentFilter bpubFile( new CryptoPP::FileSink("bankpub.der", true));
-	bpub.DEREncode( bpubFile );
-	bpubFile.MessageEnd();
-
-    CryptoPP::RSAES_OAEP_SHA_Decryptor apriv( rng, 4096 );
-    CryptoPP::TransparentFilter aprivFile( new CryptoPP::FileSink("atmpriv.der",true) );
-    apriv.DEREncode( aprivFile );
-    aprivFile.MessageEnd();
-
-
-	CryptoPP::RSAES_OAEP_SHA_Encryptor apub( apriv );
-	CryptoPP::TransparentFilter apubFile( new CryptoPP::FileSink("atmpub.der", true));
-	apub.DEREncode( apubFile );
-	apubFile.MessageEnd();
-*/
 
 	CryptoPP::AutoSeededRandomPool rng2;
 
@@ -213,29 +75,29 @@ int main()
 	fprintf(bprFile, "char bank_priv[%d] = \"", bpriv.length()+1);
 	fprintf(bprFile, "%s", bpriv.c_str());
 	fprintf(bprFile, "\";");
+	fprintf(bprFile, "\nint bank_priv_size = %d;", bpriv.length()+1);
 	fclose(bprFile);
 
 	bpbFile = fopen( "bankpub.h", "w" );
 	fprintf(bpbFile, "char bank_pub[%d] = \"", bpub.length()+1);
 	fprintf(bpbFile, "%s", bpub.c_str());
 	fprintf(bpbFile, "\";");
+	fprintf(bprFile, "\nint bank_pub_size = %d;", bpub.length()+1);
 	fclose(bpbFile);
 
 	aprFile = fopen( "atmpriv.h", "w" );
 	fprintf(aprFile, "char atm_priv[%d] = \"", apriv.length()+1);
 	fprintf(aprFile, "%s", apriv.c_str());
 	fprintf(aprFile, "\";");
+	fprintf(bprFile, "\nint atm_priv_size = %d;", apriv.length()+1);
 	fclose(aprFile);
 
 	apbFile = fopen( "atmpub.h", "w" );
 	fprintf(apbFile, "char atm_pub[%d] = \"", apub.length()+1);
 	fprintf(apbFile, "%s", apub.c_str());
 	fprintf(apbFile, "\";");
+	fprintf(bprFile, "\nint atm_pub_size = %d;", apub.length()+1);
 	fclose(apbFile);
-
-
-	//bank();
-	//atm();
 
 	return 0;
 } 
