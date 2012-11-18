@@ -258,7 +258,7 @@ int send_nonce(std::string& data, std::string& response, int sock, keyinfo& conn
     // Noncing the message
     std::string my_nonce, new_data;
     if (conn_info.there_nonce.length() == 0) {
-        int err = establish_key(data.length()==0, sock, conn_info);
+        int err = establish_key( data.length()==0, sock, conn_info );
         if (err != 0) {
             return err;
         }
@@ -301,10 +301,12 @@ int send_nonce(std::string& data, std::string& response, int sock, keyinfo& conn
 }
 
 int establish_key(bool server, int csock, keyinfo& conn_info) {
+    std::cerr << "\n\n//\nBR8K\n\\\\\n\n";
     std::string mydata = readRand(128);
     std::string their_data;
     int err = send_rsa(server, mydata, their_data, csock);
     if (err != 0) {
+        std::cerr << "SHIT GOT FUCKED\n";
         return -1;
     }
     std::string data;
@@ -336,89 +338,108 @@ int establish_key(bool server, int csock, keyinfo& conn_info) {
     aes_iv.Update((byte *)key_buff, 32);
     aes_iv.Final((byte *)key_buff);
     conn_info.aesiv.assign(key_buff, CryptoPP::AES::BLOCKSIZE);
+    
+    std::cerr << "Nonce: " << conn_info.there_nonce << "\n\n";
+    
     return 0;
 }
 
 
 int send_rsa(bool server, std::string& data, std::string& recieved, int sock) {
 	
+	std::cerr << "Nothing has been done yet.\n";
 	CryptoPP::AutoSeededRandomPool rng;
     //Do RSA Encryption here
+   
 	std::string plain, encrypted, decrypted, signature, recovered, tdecoded;
-	CryptoPP::RSA::PrivateKey my_priv;
-	CryptoPP::RSA::PublicKey my_pub;
-	CryptoPP::RSA::PublicKey other_pub;
+	plain = "helloworld";
 
-	//if server is bank then server = 1
-	if( server )
+	CryptoPP::RSAES_OAEP_SHA_Encryptor other_pub;
+    CryptoPP::RSAES_OAEP_SHA_Decryptor my_priv;
+
+	if(server)
 	{
-		std::string encoded(atm_pub);
-		CryptoPP::StringSource ss(encoded, new CryptoPP::HexDecoder( new CryptoPP::StringSink(tdecoded))); 
-		other_pub.Load(CryptoPP::StringStore((const byte*)atm_pub, atm_pub_size).Ref());
-		//Currently the byte array sizes are hardcoded in. Change them if you altar RSA size
-		std::string encoded2(bank_pub);
-		CryptoPP::StringSource ss2(encoded, new CryptoPP::HexDecoder( new CryptoPP::StringSink(tdecoded))); 
-		my_pub.Load(CryptoPP::StringStore((const byte*)bank_pub, bank_pub_size).Ref());
+		{
+		    CryptoPP::HexDecoder decoder;
+		    decoder.Put( (byte*)bank_priv, bank_priv_size );
+		    decoder.MessageEnd();
 
-		std::string encoded3(bank_priv);
-		CryptoPP::StringSource ss3(encoded, new CryptoPP::HexDecoder( new CryptoPP::StringSink(tdecoded))); 
-		my_priv.Load(CryptoPP::StringStore((const byte*)bank_priv, bank_priv_size).Ref());
+		     my_priv.AccessKey().Load( decoder );
+		 }
 
-	}
-	else
-	{
-		std::string encoded(bank_pub);
-		CryptoPP::StringSource ss(encoded, new CryptoPP::HexDecoder( new CryptoPP::StringSink(tdecoded))); 
-		other_pub.Load(CryptoPP::StringStore((const byte*)bank_pub, bank_pub_size).Ref());
+	    {
 
-		std::string encoded2(atm_pub);
-		CryptoPP::StringSource ss2(encoded, new CryptoPP::HexDecoder( new CryptoPP::StringSink(tdecoded))); 
-		my_pub.Load(CryptoPP::StringStore((const byte*)atm_pub, atm_pub_size).Ref());
+	        CryptoPP::HexDecoder decoder;
+	        decoder.Put( (byte*)atm_pub, atm_pub_size );
+	        decoder.MessageEnd();
 
-		std::string encoded3(atm_priv);
-		CryptoPP::StringSource ss3(encoded, new CryptoPP::HexDecoder( new CryptoPP::StringSink(tdecoded))); 
-		my_priv.Load(CryptoPP::StringStore((const byte*)atm_priv, atm_priv_size).Ref());
-		
+	        other_pub.AccessKey().Load( decoder );
+	    }
 
-	}
+	 }
+	 else
+	 {
+	    {
+	        CryptoPP::HexDecoder decoder;
+	        decoder.Put( (byte*)bank_pub, bank_pub_size );
+	        decoder.MessageEnd();
 
-	CryptoPP::RSAES_OAEP_SHA_Encryptor e( other_pub );
-	CryptoPP::RSAES_OAEP_SHA_Decryptor d( my_priv );
+	        other_pub.AccessKey().Load( decoder );
+	    }
+	    {
+	        CryptoPP::HexDecoder decoder;
+	        decoder.Put( (byte*)atm_priv, atm_priv_size );
+	        decoder.MessageEnd();
+
+	        my_priv.AccessKey().Load( decoder );
+	    }
+	
+	  }
+
+    std::cerr << "And here we are stating this bad boy off.\n";
 	
 	CryptoPP::RSASS<CryptoPP::PSSR, CryptoPP::SHA1>::Signer signer( my_priv );
 
-
-
 	//Run the data through the RSA encryption
-	CryptoPP::StringSource( data, true, new CryptoPP::PK_EncryptorFilter( rng, e, new CryptoPP::StringSink( encrypted )));
+	CryptoPP::StringSource( data, true, new CryptoPP::PK_EncryptorFilter( rng, other_pub, new CryptoPP::StringSink( encrypted )));
 	
 	//Sign the encrypted data	
-	CryptoPP::StringSource(encrypted, true, new CryptoPP::SignerFilter(rng, signer, new CryptoPP::StringSink(signature), true)); 
-	
-	data = encrypted;//Since this needs to be sent just change it to encrypted
-	//encrypt
-	//sign
-	//checksign
-	//decrypt
+	//CryptoPP::StringSource(encrypted, true, new CryptoPP::SignerFilter(rng, signer, new CryptoPP::StringSink(signature), true)); 
+
+    CryptoPP::StringSource(plain, true, new CryptoPP::SignerFilter(rng, signer, new CryptoPP::StringSink(signature)));
+
+       data.assign(signature);
+        std::cerr << "Here we are before the socket things.\n";
+        int err = send_socket(data, recieved, sock);
+        if (err != 0) {
+            std::cerr << "My sockets crashed\n";
+            return -1;
+        }
+
+        std::cerr << "Made it past socket";
+
+	CryptoPP::RSASS<CryptoPP::PSSR, CryptoPP::SHA1>::Verifier verifier( other_pub );
 
 
-    int err = send_socket(data, recieved, sock);
-    if (err != 0) {
+ 	try{CryptoPP::StringSource(plain+recieved, true, new CryptoPP::SignatureVerificationFilter( verifier, new CryptoPP::StringSink(recovered), CryptoPP::SignatureVerificationFilter::THROW_EXCEPTION | CryptoPP::SignatureVerificationFilter::PUT_MESSAGE));
+	} catch( const CryptoPP::Exception& e) 
+	{
+	    std::cerr << "This is a bad signature.\n";
+        return -1;//Signature failed if it returns -1
+    }
+    
+
+    data.assign(encrypted);
+    std::cerr << "Here we are before the SECOND socket things.\n";
+    int err2 = send_socket(data, recieved, sock);
+    if (err2 != 0) {
+        std::cerr << "My SECOND sockets crashed\n";
         return -1;
     }
 
-    //DO RSA Decryption here
-	CryptoPP::RSASS<CryptoPP::PSSR, CryptoPP::SHA1>::Verifier verifier( other_pub );
+    std::cerr << "Made it past SECOND socket";    
 
-	//Not entirely sure if this received is the right thing
-	try{
-	CryptoPP::StringSource(recieved, true, new CryptoPP::SignatureVerificationFilter( verifier, new CryptoPP::StringSink(recovered), CryptoPP::SignatureVerificationFilter::THROW_EXCEPTION | CryptoPP::SignatureVerificationFilter::PUT_MESSAGE));
-	} catch( const CryptoPP::Exception& e) 
-	{
-        return -1;//Signature failed if it returns -1
-    }
-
-	CryptoPP::StringSource( recieved, true, new CryptoPP::PK_DecryptorFilter( rng, d, new CryptoPP::StringSink( decrypted )));
-
+	CryptoPP::StringSource( recieved, true, new CryptoPP::PK_DecryptorFilter( rng, my_priv, new CryptoPP::StringSink( decrypted )));
+    //Little confused as to what is being used here, data is ?_?
     return 0;
 }
