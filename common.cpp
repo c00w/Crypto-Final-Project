@@ -428,20 +428,12 @@ int send_rsa(bool server, std::string data, std::string& recieved, int sock) {
     signature.assign((char *)sig_buff, length);
 
 	CryptoPP::RSASS<CryptoPP::PSSR, CryptoPP::SHA1>::Verifier verifiermine( my_pub);
-    //bool result =  verifiermine.VerifyMessage((byte *)encrypted.c_str(), encrypted.length(), (byte *)signature.c_str(), signature.length());
-    //if(result == false) {
-    //    std::cout << "bad sig locally";
-    //    return -1;
-    //}
-
-    //CryptoPP::StringSource(plain, true, new CryptoPP::SignerFilter(rng, signer, new CryptoPP::StringSink(signature)));
 
     data.assign(std::to_string(signature.length()));
     data.append("|");
     data.append(signature);
     data.append(encrypted);
 
-    std::cout << encrypted.length() << " " << signature.length() << std::endl;
 
     int err = send_socket(data, recieved, sock);
     if (err != 0) {
@@ -461,13 +453,9 @@ int send_rsa(bool server, std::string data, std::string& recieved, int sock) {
     }
     recieved = recieved.substr(recieved.find("|")+1, recieved.length()-recieved.find("|")-1);
     std::string other_signature = recieved.substr(0, sig_length);
-    std::cout << "signature ok" << std::endl;
-    std::cout << sig_length << " "<< recieved.length() << std::endl;
     std::string other_encrypted = recieved.substr(sig_length, recieved.length() - sig_length);
-    std::cerr << "Made it past socket";
-    std::cout << other_encrypted.length() << other_signature.length() << std::endl;
     if (other_signature.length() != (unsigned int)sig_length) {
-        std::cout << "sig length doesn't match expected" << std::endl;
+        return -1;
     }
 
 	CryptoPP::RSASS<CryptoPP::PSSR, CryptoPP::SHA1>::Verifier verifier( other_pub );
@@ -475,16 +463,11 @@ int send_rsa(bool server, std::string data, std::string& recieved, int sock) {
     result = verifier.VerifyMessage((byte *)other_encrypted.c_str(), other_encrypted.length(), (byte *)other_signature.c_str(), other_signature.length());
     if (result == false)
 	{
-	    std::cerr << "This is a bad signature.\n";
         return -1;//Signature failed if it returns -1
     }
-    std::cout << "Everything worked!!!" << std::endl;  
 
 	CryptoPP::StringSource( other_encrypted, true, new CryptoPP::PK_DecryptorFilter( rng, my_priv, new CryptoPP::StringSink( decrypted )));
 
     recieved.assign(decrypted);
-    std::cout << data << std::endl;
-    std::cout << recieved << std::endl;
-    //Little confused as to what is being used here, data is ?_?
     return 0;
 }
