@@ -1,3 +1,9 @@
+Key Initialisation Protocol
+    The atm and server start of by sending each other 128 random bits of data, Encrypted with the other sides public key and then signed with their own rsa key.
+    The RSA Key's are hardcoded and redone everytime you rebuild the binaries.
+    The two pieces of random data are hashed and used for the AES key,
+    various IV values and other miscellaneous items such as the hmac key.
+
 The protocol for the transfer happens in a number of layers, which are unwrapped at the destination.
     1. Initial recognition: the ATM or bank checks the input to identify what the request is.
     2. Nonce layer: applies a nonce to defend against replay attacks.
