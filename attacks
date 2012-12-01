@@ -1,0 +1,72 @@
+Account enumeration.
+Transfer 0 dollars to various usernames
+
+Keys
+They gave us their account keys
+
+Threading
+Can withdraw multiple times. No locks on a per thread basis
+
+Don't verify negatives on server, only client
+Don't verify balances non negative
+
+Used floats for balance
+
+Transfers withdraw money if account doesn't exist
+
+Fucked up timeout settings
+
+Fucked up limits, bank can't do anything
+
+Check for format string attacks
+
+Send login info with every request
+
+Can't login to user if transferred multiple times
+
+Ignore last digit of card
+
+Can check if user exists from login screen with spoofed card.
+No user, spoofed card leads to different error message
+than valid user, spoofed card
+
+Unsustainable for large numbers of users. O(N) lookups? Really?
+
+Send PIN in cleartext, and card text
+
+Shitty code quality, inconsistent tabbing, spacing.
+
+No authentication on atm to bank handshake
+
+bank can deposit floats
+
+Can pretend to be bank
+Thus infinite money withdraws
+And thus send us card and pin
+Actually not.
+But can hang atm's like crazy with junky packets
+And if you can guess nonce, can steal PIN's
+
+Nonce is not 256 bit. Its in hex bitches. Thus much weaker
+
+Source repo is bad.
+
+Incorrect HMAC
+Just a straight up fucking hash
+Put inside of encryption layer
+
+Proxy fucking crashes atm
+Gives Key Information
+Crash Banks
+Don't do get password correctly
+
+Can lock out users, ctrl+c atm
+Or crash atms
+
+Atm side timeout
+
+Timestamp is 30 fucking seconds
+
+login alice                    12345
+
+Is a valid login
