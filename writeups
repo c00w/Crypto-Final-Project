@@ -1,0 +1,86 @@
+/********\
+|* Race Conditions
+\********/
+
+The code as-is provides no protections on money, i.e., there are no mutex locks. For example, the withdrawl function:
+bool processWithdraw (std::vector<std::string> info)
+{
+	float b = (float)atof(info.at(4).c_str());
+	if(b > 1000.00) {
+		return false;
+	}
+
+	std::vector<Account>::iterator it;
+	for (it = Database.begin(); it != Database.end(); it++) {
+		if(it->get_un() == info.at(1) && it->get_logged_in() && b <= it->get_balance() && it->get_withdraw() + b <= 1000.00) {
+			it->reduce_balance(b);
+			it->increase_withdraw (b);
+			return true;
+		}
+	}
+	return false;
+}
+That is, a user logged on multiple times could theoretically withdraw double the amount in their account, assuming that the timing went through correctly. The only protection against this is not allowing users to log in on multiple machines at a time. However, the login function is also succeptible to a race condition.
+bool login (std::vector<std::string> info) 
+{
+	std::vector<Account>::iterator it;
+	int pin = atoi(info.at(3).c_str());
+
+	for (it = Database.begin(); it != Database.end(); it++) {
+===>	if(it->get_un() == info.at(1) && it->get_pin() == pin && !it->get_logged_in() && !it->get_locked()) {
+			it->set_logged_in_true ();
+			return true;
+		} 
+		else if(it->get_un() == info.at(1) && it->get_pin() != pin && !it->get_logged_in()) {
+			it->increase_login_attempts();
+			if(it->get_login_attempts() >= 3) {
+				it->lock();
+			}
+			return false;
+		}
+	}
+	return false;
+}
+If the timing works out correctly, a user will pass all required checks (the highlighted line), and then set_logged_in_true will be called. During this time, any other ATMs can then theoretically pass the same checks. The end result is that a single user would be logged on at multiple ATMs. Due to how fast all of the operations are (the data sets are miniscule), a demonstration was not feasible. This issue is exacerbated by the thirty second timeout window for packets (i.e., the bank accepts a packet if it's no more than 30 seconds old), as the proxy could hold packets, making sure that they are sent to the bank at identical times.
+
+With a user logged on to multiple ATMs, they can abuse the race conditions to withdraw or transfer double their account balance.
+
+/********\
+|* Invalid Transfers
+\********/
+A transfer to an invalid user succeeds initially, as the checks are done out of order, namely the highlighted lines:
+bool processTransfer (std::vector<std::string> info)
+{
+	float b = (float)atof(info.at(4).c_str());
+	if(b > 1000.00) {
+		return false;
+	}
+
+	std::vector<Account>::iterator it;
+	for (it = Database.begin(); it != Database.end(); it++) {
+		if(it->get_un() == info.at(1) && it->get_logged_in() && b <= it->get_balance() && it->get_transfer() + b <= 1000.00) {
+===>		it->reduce_balance(b);
+===>		it->increase_transfer (b);
+			std::vector<Account>::iterator foo;
+			for (foo = Database.begin(); foo != Database.end(); foo++) {
+				if(foo->get_un() == info.at(5) && foo->get_balance() + b <= MAX_BAL) {
+					foo->increase_balance (b);
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+The active user has their account debited before the targetted user has their account credited. The result is that issuing a transfer to an invalid user will result in the active ATM user losing money, which then vanishes entirely from the system.
+[transfers.png]
+
+/********\
+|* Overly Generous Timeouts
+\********/
+The timeout checking on both sides is overly generous. The ATM has a 30 second window
+if(time(NULL) - messageTimeout < 30) // Bank Response needs to be in less that 30 seconds.
+{
+    // [...]
+}
+and the bank has no timeout handling at all. As such, packets can be held up to 30 seconds before being sent to the ATM, and indefinitely before being sent to the bank. This opens it up to much longer analysis than otherwise. While there is no specific exploit I have in mind, this is a much larger window than is needed for packets to be sent and received.
