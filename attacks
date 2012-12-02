@@ -71,3 +71,5 @@ Timestamp is 30 fucking seconds [sort of addressed, Sam]
 login alice                    12345
 
 Is a valid login
+
+Also note that they fucked up their random number generator
