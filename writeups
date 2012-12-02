@@ -72,8 +72,8 @@ bool processTransfer (std::vector<std::string> info)
 	}
 	return false;
 }
-The active user has their account debited before the targetted user has their account credited. The result is that issuing a transfer to an invalid user will result in the active ATM user losing money, which then vanishes entirely from the system.
-[transfers.png]
+The active user has their account debited before the targetted user has their account credited. The result is that issuing a transfer to an invalid user will result in the active ATM user losing money, which then vanishes entirely from the system. In the image, Bob has $40 vanish when he attempts to transfer it to Vriska, a nonexistant user.
+[transferLoss.png]
 
 /********\
 |* Overly Generous Timeouts
@@ -84,3 +84,21 @@ if(time(NULL) - messageTimeout < 30) // Bank Response needs to be in less that 3
     // [...]
 }
 and the bank has no timeout handling at all. As such, packets can be held up to 30 seconds before being sent to the ATM, and indefinitely before being sent to the bank. This opens it up to much longer analysis than otherwise. While there is no specific exploit I have in mind, this is a much larger window than is needed for packets to be sent and received.
+
+/********\
+|* Account Enumeration Via Transfer
+\********/
+$0 transfers can be used to verify whether or not a given user has an account at the bank. For example, Alice tries to send $0 to Eve (which succeeds) and Vriska (which fails), showing that Eve has an account, but Vriska does not. In the image, Alice verifies that Bob is a valid user (as the transfer succeeds) and that Vriska is not a valid user, as the transfer fails.
+[transferUser.png]
+{demonstration}
+
+/********\
+|* Dysfunctional Card Verification
+\********/
+The actual contents of a card file are ignored. The only verification done on the card is if it has anything in it. That is, any card put into the machine will satisfy it, as long as it doesn't have a blank "magnetic strip" (i.e., contents). This is a massive security flaw, as it is a failure of two-factor security. The only protection that ATMs have are PINs, which only have 10^6 options.
+{demonstration}
+
+/********\
+|* Poor Scaling
+\********/
+While not an issue with the current scale of the project, all account information is stored in a vector. With O(n) lookups, this will become incredibly slow with very large amounts of users.

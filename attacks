@@ -1,20 +1,20 @@
 Account enumeration.
-Transfer 0 dollars to various usernames
+Transfer 0 dollars to various usernames [addressed, Sam]
 
 Keys
 They gave us their account keys
 
 Threading
-Can withdraw multiple times. No locks on a per thread basis
+Can withdraw multiple times. No locks on a per thread basis [addressed, Sam]
 
 Don't verify negatives on server, only client
 Don't verify balances non negative
 
 Used floats for balance
 
-Transfers withdraw money if account doesn't exist
+Transfers withdraw money if account doesn't exist [addressed, Sam]
 
-Fucked up timeout settings
+Fucked up timeout settings [addressed, Sam]
 
 Fucked up limits, bank can't do anything
 
@@ -24,13 +24,14 @@ Send login info with every request
 
 Can't login to user if transferred multiple times
 
-Ignore last digit of card
+Ignore last digit of card [addressed, Sam]
+[note that it actually ignores literally the entire card and just checks if it's empty]
 
-Can check if user exists from login screen with spoofed card.
+Can check if user exists from login screen with spoofed card. [doesn't actually work, Sam]
 No user, spoofed card leads to different error message
 than valid user, spoofed card
 
-Unsustainable for large numbers of users. O(N) lookups? Really?
+Unsustainable for large numbers of users. O(N) lookups? Really? [addressed, Sam]
 
 Send PIN in cleartext, and card text
 
@@ -65,7 +66,7 @@ Or crash atms
 
 Atm side timeout
 
-Timestamp is 30 fucking seconds
+Timestamp is 30 fucking seconds [sort of addressed, Sam]
 
 login alice                    12345
 
