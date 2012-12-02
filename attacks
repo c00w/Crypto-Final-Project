@@ -61,7 +61,7 @@ Gives Key Information
 Crash Banks
 Don't do get password correctly
 
-Can lock out users, ctrl+c atm
+Can lock out users, ctrl+c atm [addressed, Jake]
 Or crash atms
 
 Atm side timeout
@@ -71,3 +71,6 @@ Timestamp is 30 fucking seconds [sort of addressed, Sam]
 login alice                    12345
 
 Is a valid login
+
+login takes an additional 7th digit that doesn't matter [ addressed, Jake]
+	PIN: ******* will still let you log in with garbage 7th digit
