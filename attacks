@@ -68,9 +68,9 @@ Atm side timeout
 
 Timestamp is 30 fucking seconds [sort of addressed, Sam]
 
-login alice                    12345
-
-Is a valid login
+login alice                    12345 [screenshot called OneLineCommands.png, Jake]
+Is a valid login, can also put more spaces and queue up transfers/withdraws
+pre login (included in screenshot)
 
 login takes an additional 7th digit that doesn't matter [ addressed, Jake]
 	PIN: ******* will still let you log in with garbage 7th digit
