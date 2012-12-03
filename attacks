@@ -56,9 +56,10 @@ Incorrect HMAC
 Just a straight up fucking hash
 Put inside of encryption layer
 
-Proxy fucking crashes atm
+Proxy fucking crashes atm [addressed, Sam]
+Crash Banks [addressed, Sam]
+
 Gives Key Information
-Crash Banks
 Don't do get password correctly
 
 Can lock out users, ctrl+c atm [addressed, Jake]

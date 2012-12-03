@@ -83,7 +83,12 @@ if(time(NULL) - messageTimeout < 30) // Bank Response needs to be in less that 3
 {
     // [...]
 }
-and the bank has no timeout handling at all. As such, packets can be held up to 30 seconds before being sent to the ATM, and indefinitely before being sent to the bank. This opens it up to much longer analysis than otherwise. While there is no specific exploit I have in mind, this is a much larger window than is needed for packets to be sent and received.
+and the bank has no timeout handling at all. As such, packets can be held up to 30 seconds before being sent to the ATM, and indefinitely before being sent to the bank. This opens it up to much longer analysis than otherwise. While there is no specific exploit I have in mind, this is a much larger window than is needed for packets to be sent and received. In the proxy, a large amount of work can be done. Adding the following code in between receiving an ATM packet and forwarding the packet to the bank results in proper operation:
+printf( "Sleeping for 29 seconds.\n" );
+sleep( 29 );
+[slowLogin.png]
+Increasing the sleep to 30 seconds results in a timeout.
+[overslept.png]
 
 /********\
 |* Account Enumeration Via Transfer
@@ -102,3 +107,45 @@ The actual contents of a card file are ignored. The only verification done on th
 |* Poor Scaling
 \********/
 While not an issue with the current scale of the project, all account information is stored in a vector. With O(n) lookups, this will become incredibly slow with very large amounts of users.
+
+/********\
+|* Crashing the Bank
+\********/
+Adding a single line of code to the proxy will crash the bank. The bank cannot handle a malformed handshake message. The follow section of code in the proxy:
+while(1)
+{
+	//read the packet from the ATM
+    // [...]
+	
+	// Crashes bank
+    strcpy( packet, "" );
+    
+	//forward packet to bank
+    // [...]
+	
+	//get response packet from bank
+    // [...]
+	
+	// Crashes ATM
+	strcpy( packet, "" );
+	
+	//forward packet to ATM
+    // [...]
+}
+can be easily manipulated to crash the bank (or, similarly, the ATMs, as detailed slightly later). Adding the line of code before forwarding the packet to the bank crashes the bank as soon as an ATM user attempts to log in. 
+[crashBank.png]
+Similarly, ATMs can be crashed by adding the line of code before forwarding the packet to the ATM.
+[crashATM.png]
+If both lines are left in, the bank crashes with a core dump, and the ATM crashes with no error message.
+[crashBoth.png]
+This issue is due to not checking the validity of initial handshake messages. When it receives a blank message, it still tries to proceed with setting up a secure connection. The cryptographic functions crash, and the ATM and/or bank crash with them.
+{demonstration}
+
+
+
+
+
+
+
+
+
