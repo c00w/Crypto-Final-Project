@@ -119,11 +119,11 @@ if(time(NULL) - messageTimeout < 30) // Bank Response needs to be in less that 3
 and the bank has no timeout handling at all. As such, packets can be held up to 30 seconds before being sent to the ATM, and indefinitely before being sent to the bank. This opens it up to much longer analysis than otherwise. While there is no specific exploit I have in mind, this is a much larger window than is needed for packets to be sent and received. In the proxy, a large amount of work can be done. Adding the following code in between receiving an ATM packet and forwarding the packet to the bank results in proper operation:
 printf( "Sleeping for 29 seconds.\n" );
 sleep( 29 );
-[slowLogin.png]
+\includegraphics{slowLogin.png}
 
 \section{Account Enumeration Via Transfer}
 $0 transfers can be used to verify whether or not a given user has an account at the bank. For example, Alice tries to send $0 to Eve (which succeeds) and Vriska (which fails), showing that Eve has an account, but Vriska does not. In the image, Alice verifies that Bob is a valid user (as the transfer succeeds) and that Vriska is not a valid user, as the transfer fails.
-[transferUser.png]
+\includegraphics{transferUser.png}
 {demonstration}
 
 \section{Dysfunctional Card Verification}
@@ -156,9 +156,9 @@ while(1)
     // [...]
 }
 can be easily manipulated to crash the bank (or, similarly, the ATMs, as detailed slightly later). Adding the line of code before forwarding the packet to the bank crashes the bank as soon as an ATM user attempts to log in. 
-[crashBank.png]
+\includegraphics{crashBank.png}
 Similarly, ATMs can be crashed by adding the line of code before forwarding the packet to the ATM.
-[crashATM.png]
+\includegraphics{crashATM.png}
 If both lines are left in, the bank crashes with a core dump, and the ATM crashes with no error message. This issue is due to not checking the validity of initial handshake messages. When it receives a blank message, it still tries to proceed with setting up a secure connection. The cryptographic functions crash, and the ATM and/or bank crash with them.
 {demonstration}
 
