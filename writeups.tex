@@ -262,7 +262,10 @@ when you check the users balance it will register as \$1. The user is then allow
 
 Although this allows for theft of a very small fraction of a penny each time it is still an exploit. On a large enough scale it would allow for generation of a fair amount of money.
 
-
+In the image below we also noted that after repitition of this process the balance will at one point show that it contains \$1 but not allow you to withdraw that dollar. This was then fixed by depositing a whole number which made the float agree with the balance display.
+\\
+\includegraphics[scale=0.5]{StrangeFloatBehavior.png}
+\\
 \section{Key Management}
 
 Their binary does not have keys hardcoded into it. Rather they must be put in a special folder. This has two issues. First it is much easier to make a copy of their keys
