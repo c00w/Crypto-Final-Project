@@ -60,22 +60,78 @@ An example of adding the sleeps is below.
 \includegraphics[scale=0.5]{slowLogin.png}
 \\
 
-\subsection{Server Side Verification}
+\subsection{Lack of Server Side Verification}
 On the server side, no verification is done that the received numbers are integers.
 \begin{lstlisting}
     float b = (float)atof(info.at(4).c_str());
 \end{lstlisting}
 Bank balances should always be integers; there is no reason to accept floats.
 
-\subsection{Key Management}
+\subsection{Bank Deposits Floats}
+While the ATM only allows withdrawals of integer amounts, the bank allows for deposits of floats. There is no server side input verification other than making sure that it is a positive float. If there is a deposit at the bank with at least seven decimal places (e.g., 0.9999999), when the user checks their balance it will register as \$1 more than they previously had. They will then be able to withdraw the new amount, plus the dollar.
 
-Their binary does not have keys hardcoded into it. Rather they must be put in a special folder. This has two issues. First it is much easier to make a copy of their keys
-Second it allows for on the fly key manipulation. If you have access to the directory controlling the keys, you can change the keys and since the program loads them from disk each time it tries to use them you can change them at runtime.
+While this isn't very exploitable (the user would need to sit down at a bank's computer and deposit \$0.9999999 multiple times), it shows that the bank allows for malformed inputs.
+
+In the following impage, repeated deposits of \$0.9999999 were followed by depositing a whole amount. This rolled it over, and allowed the user to withdraw the whole dollar amount.
+\\
+\includegraphics[scale=0.5]{StrangeFloatBehavior.png}
+\\
+
+\subsection{Poor PIN Verification}
+PINs are supposed to be 6 characters, but any amount of zeros at the end are ignored. If a PIN is entered with less than the required characters, it pads it out with zeros:
+\begin{lstlisting}
+pin = getPin("PIN: ");
+pin = pin.substr(0,6);
+while(pin.length() < 6)
+{
+    pin = pin + "0";
+}
+pin = toNumbers(pin);
+\end{lstlisting}
+For example, a PIN of 678900 will accept 6789, 67890, or 678900.
+
+\subsection{Key Management}
+The binaries do not have hardcoded keys. Instead of being cooked into the binaries, they read the keys from a special folder. This has two consequences. First, it makes it far easier to get copies of the keys. Second, it allows for on-the-fly key manipulation--if an attacker has access to the directory controlling the keys, they can be changed at runtime.
 
 \subsection{No HMAC}
-They have no message verification protection.
-While they do hash the message they are sending they use a straight up SHA-512 hash.
-Thus if you can break the encryption it is trivial to modify a message since you can easily recompute the hash.
+There is no HMAC being used. Messages are hashed, but it is simple SHA512, which is not passworded. If the encryption is broken, modifying a message is trivial, as the attacker can just recompute the hash.
+
+\subsection{Unhashed Card Contents}
+The card contents are never hashed. There is a getCardHash function that does no hashing:
+\begin{lstlisting}
+std::string getCardHash(std::string cardFile) 
+{
+    std::ifstream card(cardFile.c_str());
+    std::string tempHash((std::istreambuf_iterator<char>(card)),std::istreambuf_iterator<char>());
+    
+    std::string cardHash = tempHash;
+    cardHash = cardHash.substr(0,128);
+    std::transform(cardHash.begin(), cardHash.end(), cardHash.begin(), ::toupper);
+    cardHash = toHex(cardHash);
+    
+    return cardHash;
+}
+\end{lstlisting}
+It just reads the first 128 characters from the file (or attempts to, there is no assurance that it has 128 characters) then converts it to uppercase, then lastly to hex. Note that the toHex function does no verification on the string; if it's fed invalid hex it just replaces all characters not 0-9, A-F with 0.
+\begin{lstlisting}
+std::string toHex(std::string inputStr)
+{
+    std::string retStr = "";
+    for(int i = 0; i < inputStr.length(); i++)
+    {
+        if(('0' <= inputStr[i] && inputStr[i] <= '9') || ('A' <= inputStr[i] && inputStr[i] <= 'F'))
+        {
+            retStr += inputStr[i];
+        }
+        else
+        {
+            retStr += "0";
+        }
+    }
+
+    return retStr;
+}
+\end{lstlisting}
 
 \subsection{RNG Flaws}
 
@@ -122,24 +178,7 @@ std::string getRandom(int length)
 }
 \end{lstlisting}
 
-\section{Hypothetical Exploits}
-
-\subsection{Infinite Money}
-As input verification is only done ATM-side, not server-side, masquerading as an ATM would allow the user to put in malformed requests, such as depositing 
-
 \section{Exploits}
-
-\subsection{Bank Deposits Floats}
-
-The bank allows users to deposit floats. The ATM only allows for withdrawal of integer amounts. If you deposit into the bank an amount of at least 7 decimal places (i.e. .9999999)
-when you check the users balance it will register as \$1. The user is then allowed to withdraw a dollars worth from the atm.
-
-Although this allows for theft of a very small fraction of a penny each time it is still an exploit. On a large enough scale it would allow for generation of a fair amount of money.
-
-In the image below we also noted that after repitition of this process the balance will at one point show that it contains \$1 but not allow you to withdraw that dollar. This was then fixed by depositing a whole number which made the float agree with the balance display.
-\\
-\includegraphics[scale=0.5]{StrangeFloatBehavior.png}
-\\
 
 \subsection{Invalid Transfers}
 A transfer to an invalid user succeeds initially, as the checks are done out of order, namely the highlighted lines:
@@ -180,17 +219,80 @@ The active user has their account debited before the targetted user has their ac
 \\
 
 \subsection{Dysfunctional Card Verification}
-The actual contents of a card file are ignored. The only verification done on the card is if it has anything in it. That is, any card put into the machine will satisfy it, as long as it doesn't have a blank "magnetic strip" (i.e., contents). This is a massive security flaw, as it is a failure of two-factor security. The only protection that ATMs have are PINs, which only have $10^6$ options.
+The actual contents of a card file are ignored. The only verification done on the card is if it has anything in it. That is, any card put into the machine will satisfy it, as long as it doesn't have a blank "magnetic strip" (i.e., contents). This is a massive security flaw, as it is a failure of two-factor security. 128 characters are read from the card file, and summarily ignored (after being sent as encrypted plaintext). The login code is as follows:
+\begin{lstlisting}
+bool login (std::vector<std::string> info) 
+{
+	std::vector<Account>::iterator it;
+	int pin = atoi(info.at(3).c_str());
+
+	for (it = Database.begin(); it != Database.end(); it++) {
+		if(it->get_un() == info.at(1) && it->get_pin() == pin && !it->get_logged_in() && !it->get_locked()) {
+			it->set_logged_in_true ();
+			return true;
+		} 
+		else if(it->get_un() == info.at(1) && it->get_pin() != pin && !it->get_logged_in()) {
+			it->increase_login_attempts();
+			if(it->get_login_attempts() >= 3) {
+				it->lock();
+			}
+			return false;
+		}
+	}
+	return false;
+}
+\end{lstlisting}
+It verifies that the PIN matches, but never checks if the card actually matches with anything. In fact, the card is never used anywhere. The only verification on the card is that the file exists and isn't empty:
+\begin{lstlisting}
+if(cardFile)
+{
+    sendPacket = true; 
+
+    username = temp;
+
+    cardHash = getCardHash(cardFilename);
+
+    pin = getPin("PIN: ");
+    pin = pin.substr(0,6);
+    while(pin.length() < 6)
+    {
+        pin = pin + "0";
+    }
+    pin = toNumbers(pin);
+}
+else
+{
+    temp = "";
+    cout << "ATM card not found.\n";
+}
+\end{lstlisting}
+This verifies that the card exists.
 
 \subsection{Login Info}
-
 All login info is sent in cleartext inside the encrypted packet. The most 
 significant issue is that the PIN is sent unencrypted. The first 128 characters 
 in the card file are sent, regardless of if the card file contains 128 characters 
 or not. Note that the card contents are ignored. 
+
 None of the login information is hashed, so being able to decrypt messages reveals 
 the full amount of information needed to compromise somebody's account. As it also 
 sends account name, an attacker has account name, PIN, and the (unused) card number.
+\begin{lstlisting}
+void* formATMPacket(char packet[], std::string command, std::string username, std::string cardHash, std::string pin, std::string item1, std::string item2, std::string atmNonce, std::string bankNonce)
+{
+    std::vector<std::string> tempVector;
+    tempVector.push_back(command);
+    tempVector.push_back(username);
+    tempVector.push_back(cardHash);
+    tempVector.push_back(pin);
+    tempVector.push_back(item1);
+    tempVector.push_back(item2);
+    tempVector.push_back(atmNonce);
+    tempVector.push_back(bankNonce);
+    formPacket(packet, 1023, tempVector);
+}
+\end{lstlisting}
+The packet sent on login and all other requests contains the unhashed username, card/account number, and PIN.
 
 \subsection{Crashing the Bank}
 Adding a single line of code to the proxy will crash the bank. The bank cannot handle a malformed handshake message. The follow section of code in the proxy:
@@ -276,24 +378,12 @@ If the timing works out correctly, a user will pass all required checks (the hig
 With a user logged on to multiple ATMs, they can abuse the race conditions to withdraw or transfer double their account balance.
 
 \subsection{Handshake Hijacking}
+When the bank and ATM establish a handshake, the ATM sends the bank a nonce encrypted with the bank's RSA key. The bank then sends back an encryption key and the nonce, as well as its own generated nonce. There is no explicit authentication.
 
-When the bank and ATM establish a handshake the ATM sends the bank a 
-nonce encrypted with the banks rsa key. Then the bank sends back an
-encryption key and the nonce, as well as its own generated nonce.
+Assuming an attacker has the ATM's public key, it is possible to masquerade as the bank. The attacker can simply send back a key encrypted with the ATM's public key and the nonce.
 
-Note that there is no explicit authentication.
+As there is no RSA (or other) authentication, if an attacker can guess the nonce, they can masquerade as the bank. Normally this would take $2^{256}$ attempts, but due to the aforementioned RNG flaw, it only takes $2^{128}$ attempts. Even worse, if the ATM is being run on an embedded system, entropy will be low upon startup, making it possible to guess the output of the system's random number generator.
 
-Assuming you have the ATM's public key, it is possible to pretend to be the bank. You can simply send back a key encrypted with the ATM's public key and the nonce.
-
-Since there is no RSA authentication, or any other form of authentication for that matter,
-if you can guess the nonce you can masquerade as the bank. Normally this would
-take $2^{256}$ attempts, but due to the aforementioned flaw in the RNG it only
-takes $2^{128}$ attempts. Even worse, if you are starting an ATM on an embedded
-system, upon restart the entropy will be low and it is possible to guess
-the output of the system's random number generator. This makes pretending to be the bank even easier.
-
-This is incredible useful due to the plethora of exploits available. You can 
-make the ATM give out infinite money, and you can read everyone's card numbers 
-and PINs since they are sent over the network unhashed.
+If a successful masquerade is established, there are two crippling exploits, with some less important ones. The first is full account information obtained, as the proxy can then decrypt the message, which contains full cleartext login information for the user (see Login Info). The second is verifying all requests, including withdrawals for any amount. That is, masquerading as the bank compromises login information for all users who connect and also allows attackers to drain all of the money from any ATM.
 
 \end{document}
