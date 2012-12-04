@@ -28,7 +28,7 @@ escapeinside={\%*}{*)}          % if you want to add a comment within your code
 
 \title{Cryptographic Analysis}
 \author{Colin Rice}
-\author{Sam Milito}
+\author{Samuel Milito}
 \author{Jacob Shedd}
 
 \maketitle
@@ -47,7 +47,7 @@ bool processWithdraw (std::vector<std::string> info)
 
 	std::vector<Account>::iterator it;
 	for (it = Database.begin(); it != Database.end(); it++) {
-		if(it->get_un() == info.at(1) && it->get_logged_in() && b <= it->get_balance() && it->get_withdraw() + b <= 1000.00) {
+====>	if(it->get_un() == info.at(1) && it->get_logged_in() && b <= it->get_balance() && it->get_withdraw() + b <= 1000.00) {
 			it->reduce_balance(b);
 			it->increase_withdraw (b);
 			return true;
@@ -56,8 +56,7 @@ bool processWithdraw (std::vector<std::string> info)
 	return false;
 }
 \end{lstlisting}
-That is, a user logged on multiple times could theoretically withdraw double the amount in their account, assuming that the timing went through correctly. The only protection against this is not allowing users to log in on multiple machines at a time. However, the login function is also succeptible to a race condition.
-
+That is, a user logged on multiple times could theoretically withdraw double the amount in their account, assuming that the timing went through correctly. They would need to pass the marked line at the same time on two consoles, and it will authorize withdrawal on two ATMs, regardless if it would go over the account balance or the daily \$1000 limit. The only protection against this is not allowing users to log in on multiple machines at a time. However, the login function is also succeptible to a race condition:
 \begin{lstlisting}
 bool login (std::vector<std::string> info) 
 {
@@ -86,7 +85,6 @@ With a user logged on to multiple ATMs, they can abuse the race conditions to wi
 
 \section{Invalid Transfers}
 A transfer to an invalid user succeeds initially, as the checks are done out of order, namely the highlighted lines:
-
 \begin{lstlisting}
 bool processTransfer (std::vector<std::string> info)
 {
@@ -130,11 +128,15 @@ and the bank has no timeout handling at all. As such, packets can be held up to 
 printf( "Sleeping for 29 seconds.\n" );
 sleep( 29 );
 \end{lstlisting}
-\includegraphics{slowLogin.png}
+\\
+\includegraphics[scale=0.5]{slowLogin.png}
+\\
 
 \section{Account Enumeration Via Transfer}
 \$0 transfers can be used to verify whether or not a given user has an account at the bank. For example, Alice tries to send \$0 to Eve (which succeeds) and Vriska (which fails), showing that Eve has an account, but Vriska does not. In the image, Alice verifies that Bob is a valid user (as the transfer succeeds) and that Vriska is not a valid user, as the transfer fails.
-\includegraphics{transferUser.png}
+\\
+\includegraphics[scale=0.5]{transferUser.png}
+\\
 
 \section{Dysfunctional Card Verification}
 The actual contents of a card file are ignored. The only verification done on the card is if it has anything in it. That is, any card put into the machine will satisfy it, as long as it doesn't have a blank "magnetic strip" (i.e., contents). This is a massive security flaw, as it is a failure of two-factor security. The only protection that ATMs have are PINs, which only have $10^6$ options.
@@ -167,18 +169,23 @@ while(1)
 }
 \end{lstlisting}
 can be easily manipulated to crash the bank (or, similarly, the ATMs, as detailed slightly later). Adding the line of code before forwarding the packet to the bank crashes the bank as soon as an ATM user attempts to log in. 
-\includegraphics{crashBank.png}
+\\
+\includegraphics[scale=0.5]{crashBank.png}
+\\
 Similarly, ATMs can be crashed by adding the line of code before forwarding the packet to the ATM.
-\includegraphics{crashATM.png}
+\\
+\includegraphics[scale=0.5]{crashATM.png}
+\\
 If both lines are left in, the bank crashes with a core dump, and the ATM crashes with no error message. This issue is due to not checking the validity of initial handshake messages. When it receives a blank message, it still tries to proceed with setting up a secure connection. The cryptographic functions crash, and the ATM and/or bank crash with them.
 
 \section{RNG Flaws}
 
-Their random number generator when asked for 32 bytes of data, outputs 32
-random hex bytes. This means that each byte only has 16 possibilities instead
-of 256.
-Thus everything they generate using these functions, AES Keys, nonces, etc..
-Only has 128 bits of randomness instead of 256 bits if they are reading back 256 bits.
+Their random number generator when asked for 32 bytes of data outputs 32
+random hex bytes. This means that each byte only has 16 (2^{4}) possibilities instead
+of 256 (2^{8}).
+
+The end result is that everything generated using these functions (AES keys, nonces, etc.) only
+have 128 bits of randomness instead of the expected 256 bits of randomness.
 
 \begin{lstlisting}
 std::string getRandom(int length)
@@ -227,25 +234,24 @@ The card number is not used.
 
 \section{Handshake Hijacking}
 
-When the bank and atm establish a handshake the atm sends the bank a 
-nonce encrypted with the banks rsa key. Then the bank send back an
-encryption key and the nonce, as well as its own generated nonce
+When the bank and ATM establish a handshake the ATM sends the bank a 
+nonce encrypted with the banks rsa key. Then the bank sends back an
+encryption key and the nonce, as well as its own generated nonce.
 
 Note that there is no explicit authentication.
 
-Assuming you have the atm's public key it is possible to pretend to be a bank. You can simply send back a key encrypted with the atm's public key and the nonce.
+Assuming you have the ATM's public key, it is possible to pretend to be the bank. You can simply send back a key encrypted with the ATM's public key and the nonce.
 
-Since there is no rsa authentication, or any other form of authentication,
-if you can guess the nonce you can pretend to be a bank. Normally this would
-take $2^256$ attempts, but due to the aforementioned flaw in the RNG it only
-take $2^128$ attempts. Even worse if you are starting an atm on an embedded
-system up on restart, the entropy will be low and it is possible to guess
-the output of the systems random number generator. Thus you can pretend
-to be the bank.
+Since there is no RSA authentication, or any other form of authentication for that matter,
+if you can guess the nonce you can masquerade as the bank. Normally this would
+take $2^{256}$ attempts, but due to the aforementioned flaw in the RNG it only
+takes $2^{128}$ attempts. Even worse, if you are starting an ATM on an embedded
+system, upon restart the entropy will be low and it is possible to guess
+the output of the system's random number generator. This makes pretending to be the bank even easier.
 
-This is super useful due to the plethora of exploits available. You can 
-make the atm give out infinite money, you can read everyone's card numbers 
-and pins since they are sent over the network unhashed.
+This is incredible useful due to the plethora of exploits available. You can 
+make the ATM give out infinite money, and you can read everyone's card numbers 
+and PINs since they are sent over the network unhashed.
 
 \section{Key Management}
 
