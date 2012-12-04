@@ -2,7 +2,7 @@ Account enumeration.
 Transfer 0 dollars to various usernames [addressed, Sam]
 
 Keys
-They gave us their account keys
+They gave us their account keys [addressed, Colin]
 
 Threading
 Can withdraw multiple times. No locks on a per thread basis [addressed, Sam]
@@ -16,28 +16,20 @@ Transfers withdraw money if account doesn't exist [addressed, Sam]
 
 Fucked up timeout settings [addressed, Sam]
 
-Fucked up limits, bank can't do anything
+Fucked up limits, bank can't do anything[addressed, colin]
 
-Check for format string attacks
-
-Send login info with every request
-
-Can't login to user if transferred multiple times
+Send login info with every request[addressed, colin]
 
 Ignore last digit of card [addressed, Sam]
 [note that it actually ignores literally the entire card and just checks if it's empty]
 
 Can check if user exists from login screen with spoofed card. [doesn't actually work, Sam]
-No user, spoofed card leads to different error message
-than valid user, spoofed card
 
 Unsustainable for large numbers of users. O(N) lookups? Really? [addressed, Sam]
 
-Send PIN in cleartext, and card text
-
 Shitty code quality, inconsistent tabbing, spacing.
 
-No authentication on atm to bank handshake
+No authentication on atm to bank handshake[addressed, colin]
 
 bank can deposit floats
 
@@ -46,9 +38,9 @@ Thus infinite money withdraws
 And thus send us card and pin
 Actually not.
 But can hang atm's like crazy with junky packets
-And if you can guess nonce, can steal PIN's
+And if you can guess nonce, can steal PIN's [addressed, colin]
 
-Nonce is not 256 bit. Its in hex bitches. Thus much weaker
+Nonce is not 256 bit. Its in hex bitches. Thus much weaker[addressed, colin]
 
 Source repo is bad.
 
@@ -76,4 +68,4 @@ pre login (included in screenshot)
 login takes an additional 7th digit that doesn't matter [ addressed, Jake]
 	PIN: ******* will still let you log in with garbage 7th digit
 
-Also note that they fucked up their random number generator
+Also note that they fucked up their random number generator[addressed, colin]

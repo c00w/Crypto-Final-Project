@@ -128,6 +128,7 @@ and the bank has no timeout handling at all. As such, packets can be held up to 
 printf( "Sleeping for 29 seconds.\n" );
 sleep( 29 );
 \end{lstlisting}
+An example is below.
 \\
 \includegraphics[scale=0.5]{slowLogin.png}
 \\
@@ -181,11 +182,56 @@ If both lines are left in, the bank crashes with a core dump, and the ATM crashe
 \section{RNG Flaws}
 
 Their random number generator when asked for 32 bytes of data outputs 32
-random hex bytes. This means that each byte only has 16 (2^{4}) possibilities instead
-of 256 (2^{8}).
+random hex bytes. This means that each byte only has 16 ($2^{4}$) possibilities instead
+of 256 ($2^{8}$).
 
 The end result is that everything generated using these functions (AES keys, nonces, etc.) only
 have 128 bits of randomness instead of the expected 256 bits of randomness.
+
+\begin{lstlisting}
+std::string getRandom(int length)
+{
+     std::string retStr = "";
+     CryptoPP::AutoSeededRandomPool rng;
+     int random;
+     int num = 0;
+     bool hex = true;
+
+     for(unsigned int i = 0; i < length; ++i)
+     {
+         random = (int) rng.GenerateByte();
+         if(hex)
+         {
+             // Generate Random Hex String
+             num = (int) (random % 16);
+             if(num < 10)
+             {
+                 retStr += (num + '0');
+             }
+             else
+             {
+                 retStr += ((num - 10) + 'A');
+             }
+         }
+         else
+         {
+             // Generate Random String With ASCII Range (48, 126)
+             num = (int) (random % (126 - 48));
+             retStr += (num + '0');
+         }
+     }
+
+     return retStr;
+}
+\end{lstlisting}
+
+\section{Login Info}
+
+The login info is sent in cleartext inside of the encrypted packet.
+By login info we mean the card number and pin.
+The PIN is compared to the pin on the server. There is no hashing
+of the login information.
+The card number is not used.
 
 \section{Handshake Hijacking}
 
@@ -199,14 +245,15 @@ Assuming you have the ATM's public key, it is possible to pretend to be the bank
 
 Since there is no RSA authentication, or any other form of authentication for that matter,
 if you can guess the nonce you can masquerade as the bank. Normally this would
-take 2^{256} attempts, but due to the aforementioned flaw in the RNG it only
-takes 2^{128} attempts. Even worse, if you are starting an ATM on an embedded
+take $2^{256}$ attempts, but due to the aforementioned flaw in the RNG it only
+takes $2^{128}$ attempts. Even worse, if you are starting an ATM on an embedded
 system, upon restart the entropy will be low and it is possible to guess
 the output of the system's random number generator. This makes pretending to be the bank even easier.
 
 This is incredible useful due to the plethora of exploits available. You can 
 make the ATM give out infinite money, and you can read everyone's card numbers 
 and PINs since they are sent over the network unhashed.
+
 
 \section{Bank Deposits Floats}
 
@@ -215,4 +262,13 @@ when you check the users balance it will register as \$1. The user is then allow
 
 Although this allows for theft of a very small fraction of a penny each time it is still an exploit. On a large enough scale it would allow for generation of a fair amount of money.
 
+
+\section{Key Management}
+
+Their binary does not have keys hardcoded into it. Rather they must be put in a special folder. This has two issues. First it is much easier to make a copy of their keys
+Second it allows for on the fly key manipulation. If you have access to the directory controlling the keys, you can change the keys and since the program loads them from disk each time it tries to use them you can change them at runtime.
+
+\section{Bank Deposit Limits}
+Due to the incorrect way atm limits are implemented, completely on the server side and globally, the bank is limited to depositing 1000\$ into any account. It cannot make multiple 1000\$ deposits.
+>>>>>>> a4998f5e0cdace82f78b4dce583dfc967abdefc9
 \end{document}
