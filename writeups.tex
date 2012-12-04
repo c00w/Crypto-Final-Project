@@ -28,7 +28,7 @@ escapeinside={\%*}{*)}          % if you want to add a comment within your code
 
 \title{Cryptographic Analysis}
 \author{Colin Rice}
-\author{Sam Milito}
+\author{Samuel Milito}
 \author{Jacob Shedd}
 
 \maketitle
@@ -47,7 +47,7 @@ bool processWithdraw (std::vector<std::string> info)
 
 	std::vector<Account>::iterator it;
 	for (it = Database.begin(); it != Database.end(); it++) {
-		if(it->get_un() == info.at(1) && it->get_logged_in() && b <= it->get_balance() && it->get_withdraw() + b <= 1000.00) {
+====>	if(it->get_un() == info.at(1) && it->get_logged_in() && b <= it->get_balance() && it->get_withdraw() + b <= 1000.00) {
 			it->reduce_balance(b);
 			it->increase_withdraw (b);
 			return true;
@@ -56,8 +56,7 @@ bool processWithdraw (std::vector<std::string> info)
 	return false;
 }
 \end{lstlisting}
-That is, a user logged on multiple times could theoretically withdraw double the amount in their account, assuming that the timing went through correctly. The only protection against this is not allowing users to log in on multiple machines at a time. However, the login function is also succeptible to a race condition.
-
+That is, a user logged on multiple times could theoretically withdraw double the amount in their account, assuming that the timing went through correctly. They would need to pass the marked line at the same time on two consoles, and it will authorize withdrawal on two ATMs, regardless if it would go over the account balance or the daily \$1000 limit. The only protection against this is not allowing users to log in on multiple machines at a time. However, the login function is also succeptible to a race condition:
 \begin{lstlisting}
 bool login (std::vector<std::string> info) 
 {
@@ -86,7 +85,6 @@ With a user logged on to multiple ATMs, they can abuse the race conditions to wi
 
 \section{Invalid Transfers}
 A transfer to an invalid user succeeds initially, as the checks are done out of order, namely the highlighted lines:
-
 \begin{lstlisting}
 bool processTransfer (std::vector<std::string> info)
 {
@@ -182,11 +180,12 @@ If both lines are left in, the bank crashes with a core dump, and the ATM crashe
 
 \section{RNG Flaws}
 
-Their random number generator when asked for 32 bytes of data, outputs 32
-random hex bytes. This means that each byte only has 16 possibilities instead
-of 256.
-Thus everything they generate using these functions, AES Keys, nonces, etc..
-Only has 128 bits of randomness instead of 256 bits if they are reading back 256 bits.
+Their random number generator when asked for 32 bytes of data outputs 32
+random hex bytes. This means that each byte only has 16 (2^{4}) possibilities instead
+of 256 (2^{8}).
+
+The end result is that everything generated using these functions (AES keys, nonces, etc.) only
+have 128 bits of randomness instead of the expected 256 bits of randomness.
 
 \section{Handshake Hijacking}
 
@@ -208,7 +207,5 @@ the output of the system's random number generator. This makes pretending to be 
 This is incredible useful due to the plethora of exploits available. You can 
 make the ATM give out infinite money, and you can read everyone's card numbers 
 and PINs since they are sent over the network unhashed.
-
-
 
 \end{document}
