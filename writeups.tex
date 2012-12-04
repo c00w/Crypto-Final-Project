@@ -33,8 +33,184 @@ escapeinside={\%*}{*)}          % if you want to add a comment within your code
 
 \maketitle
 
+\section{Flaws and Exploit Enablers}
+There are a number of issues that, while not exploits in and of themselves, either allow exploits, or are issues within the system.
 
-\section{Race Conditions}
+\subsection{Bank Deposit Limits}
+Due to the incorrect way atm limits are implemented, completely on the server side and globally, the bank is limited to depositing 1000\$ into any account. It cannot make multiple 1000\$ deposits.
+
+\subsection{Poor Scaling}
+While not an issue with the current scale of the project, all account information is stored in a vector. With O(n) lookups, this will become incredibly slow with very large amounts of users.
+
+\subsection{Overly Generous Timeouts}
+The timeout checking on both sides is overly generous. The ATM has a 30 second window
+\begin{lstlisting}
+if(time(NULL) - messageTimeout < 30) // Bank Response needs to be in less that 30 seconds.
+{
+    // [...]
+}
+\end{lstlisting}
+and the bank has no timeout handling at all. As such, packets can be held up to 30 seconds before being sent to the ATM, and indefinitely before being sent to the bank. This opens it up to much longer analysis than otherwise. While there is no specific exploit I have in mind, this is a much larger window than is needed for packets to be sent and received. In the proxy, a large amount of work can be done. Adding the following code in between receiving an ATM packet and forwarding the packet to the bank results in proper operation:
+\begin{lstlisting}
+printf( "Sleeping for 29 seconds.\n" );
+sleep( 29 );
+\end{lstlisting}
+An example of adding the sleeps is below.
+\\
+\includegraphics[scale=0.5]{slowLogin.png}
+\\
+
+\subsection{Server Side Verification}
+On the server side, no verification is done that the received numbers are integers.
+\begin{lstlisting}
+    float b = (float)atof(info.at(4).c_str());
+\end{lstlisting}
+Bank balances should always be integers; there is no reason to accept floats.
+
+\subsection{Key Management}
+
+Their binary does not have keys hardcoded into it. Rather they must be put in a special folder. This has two issues. First it is much easier to make a copy of their keys
+Second it allows for on the fly key manipulation. If you have access to the directory controlling the keys, you can change the keys and since the program loads them from disk each time it tries to use them you can change them at runtime.
+
+\subsection{RNG Flaws}
+
+Their random number generator when asked for 32 bytes of data outputs 32
+random hex bytes. This means that each byte only has 16 ($2^{4}$) possibilities instead
+of 256 ($2^{8}$).
+
+The end result is that everything generated using these functions (AES keys, nonces, etc.) only
+have 128 bits of randomness instead of the expected 256 bits of randomness.
+\begin{lstlisting}
+std::string getRandom(int length)
+{
+     std::string retStr = "";
+     CryptoPP::AutoSeededRandomPool rng;
+     int random;
+     int num = 0;
+     bool hex = true;
+
+     for(unsigned int i = 0; i < length; ++i)
+     {
+         random = (int) rng.GenerateByte();
+         if(hex)
+         {
+             // Generate Random Hex String
+             num = (int) (random % 16);
+             if(num < 10)
+             {
+                 retStr += (num + '0');
+             }
+             else
+             {
+                 retStr += ((num - 10) + 'A');
+             }
+         }
+         else
+         {
+             // Generate Random String With ASCII Range (48, 126)
+             num = (int) (random % (126 - 48));
+             retStr += (num + '0');
+         }
+     }
+
+     return retStr;
+}
+\end{lstlisting}
+
+\section{Hypothetical Exploits}
+
+\subsection{Infinite Money}
+As input verification is only done ATM-side, not server-side, masquerading as an ATM would allow the user to put in malformed requests, such as depositing 
+
+\section{Exploits}
+Thus if you can impersonate an atm you can send arbitrary floats to the server. Combined with the float exploits described elsewhere you can generate infinite money.
+
+\subsection{Invalid Transfers}
+A transfer to an invalid user succeeds initially, as the checks are done out of order, namely the highlighted lines:
+\begin{lstlisting}
+bool processTransfer (std::vector<std::string> info)
+{
+	float b = (float)atof(info.at(4).c_str());
+	if(b > 1000.00) {
+		return false;
+	}
+
+	std::vector<Account>::iterator it;
+	for (it = Database.begin(); it != Database.end(); it++) {
+		if(it->get_un() == info.at(1) && it->get_logged_in() && b <= it->get_balance() && it->get_transfer() + b <= 1000.00) {
+===>		it->reduce_balance(b);
+===>		it->increase_transfer (b);
+			std::vector<Account>::iterator foo;
+			for (foo = Database.begin(); foo != Database.end(); foo++) {
+				if(foo->get_un() == info.at(5) && foo->get_balance() + b <= MAX_BAL) {
+					foo->increase_balance (b);
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+\end{lstlisting}
+The active user has their account debited before the targetted user has their account credited. The result is that issuing a transfer to an invalid user will result in the active ATM user losing money, which then vanishes entirely from the system. In the image, Bob has \$40 vanish when he attempts to transfer it to Vriska, a nonexistant user.
+\\
+\includegraphics[scale=0.5]{transferLoss.png}
+\\
+
+\subsection{Account Enumeration Via Transfer}
+\$0 transfers can be used to verify whether or not a given user has an account at the bank. For example, Alice tries to send \$0 to Eve (which succeeds) and Vriska (which fails), showing that Eve has an account, but Vriska does not. In the image, Alice verifies that Bob is a valid user (as the transfer succeeds) and that Vriska is not a valid user, as the transfer fails.
+\\
+\includegraphics[scale=0.5]{transferUser.png}
+\\
+
+\subsection{Dysfunctional Card Verification}
+The actual contents of a card file are ignored. The only verification done on the card is if it has anything in it. That is, any card put into the machine will satisfy it, as long as it doesn't have a blank "magnetic strip" (i.e., contents). This is a massive security flaw, as it is a failure of two-factor security. The only protection that ATMs have are PINs, which only have $10^6$ options.
+
+\subsection{Login Info}
+
+All login info is sent in cleartext inside the encrypted packet. The most 
+significant issue is that the PIN is sent unencrypted. The first 128 characters 
+in the card file are sent, regardless of if the card file contains 128 characters 
+or not. Note that the card contents are ignored. 
+None of the login information is hashed, so being able to decrypt messages reveals 
+the full amount of information needed to compromise somebody's account. As it also 
+sends account name, an attacker has account name, PIN, and the (unused) card number.
+
+\subsection{Crashing the Bank}
+Adding a single line of code to the proxy will crash the bank. The bank cannot handle a malformed handshake message. The follow section of code in the proxy:
+\begin{lstlisting}
+while(1)
+{
+	//read the packet from the ATM
+    // [...]
+	
+	// Crashes bank
+    strcpy( packet, "" );
+    
+	//forward packet to bank
+    // [...]
+	
+	//get response packet from bank
+    // [...]
+	
+	// Crashes ATM
+	strcpy( packet, "" );
+	
+	//forward packet to ATM
+    // [...]
+}
+\end{lstlisting}
+can be easily manipulated to crash the bank (or, similarly, the ATMs, as detailed slightly later). Adding the line of code before forwarding the packet to the bank crashes the bank as soon as an ATM user attempts to log in. 
+\\
+\includegraphics[scale=0.5]{crashBank.png}
+\\
+Similarly, ATMs can be crashed by adding the line of code before forwarding the packet to the ATM.
+\\
+\includegraphics[scale=0.5]{crashATM.png}
+\\
+If both lines are left in, the bank crashes with a core dump, and the ATM crashes with no error message. This issue is due to not checking the validity of initial handshake messages. When it receives a blank message, it still tries to proceed with setting up a secure connection. The cryptographic functions crash, and the ATM and/or bank crash with them.
+
+\subsection{Race Conditions}
 
 The code as-is provides no protections on money, i.e., there are no mutex locks. For example, the withdrawl function:
 \begin{lstlisting}
@@ -83,157 +259,7 @@ If the timing works out correctly, a user will pass all required checks (the hig
 
 With a user logged on to multiple ATMs, they can abuse the race conditions to withdraw or transfer double their account balance.
 
-\section{Invalid Transfers}
-A transfer to an invalid user succeeds initially, as the checks are done out of order, namely the highlighted lines:
-\begin{lstlisting}
-bool processTransfer (std::vector<std::string> info)
-{
-	float b = (float)atof(info.at(4).c_str());
-	if(b > 1000.00) {
-		return false;
-	}
-
-	std::vector<Account>::iterator it;
-	for (it = Database.begin(); it != Database.end(); it++) {
-		if(it->get_un() == info.at(1) && it->get_logged_in() && b <= it->get_balance() && it->get_transfer() + b <= 1000.00) {
-===>		it->reduce_balance(b);
-===>		it->increase_transfer (b);
-			std::vector<Account>::iterator foo;
-			for (foo = Database.begin(); foo != Database.end(); foo++) {
-				if(foo->get_un() == info.at(5) && foo->get_balance() + b <= MAX_BAL) {
-					foo->increase_balance (b);
-					return true;
-				}
-			}
-		}
-	}
-	return false;
-}
-\end{lstlisting}
-The active user has their account debited before the targetted user has their account credited. The result is that issuing a transfer to an invalid user will result in the active ATM user losing money, which then vanishes entirely from the system. In the image, Bob has \$40 vanish when he attempts to transfer it to Vriska, a nonexistant user.
-\\
-\includegraphics[scale=0.5]{transferLoss.png}
-\\
-
-\section{Overly Generous Timeouts}
-The timeout checking on both sides is overly generous. The ATM has a 30 second window
-\begin{lstlisting}
-if(time(NULL) - messageTimeout < 30) // Bank Response needs to be in less that 30 seconds.
-{
-    // [...]
-}
-\end{lstlisting}
-and the bank has no timeout handling at all. As such, packets can be held up to 30 seconds before being sent to the ATM, and indefinitely before being sent to the bank. This opens it up to much longer analysis than otherwise. While there is no specific exploit I have in mind, this is a much larger window than is needed for packets to be sent and received. In the proxy, a large amount of work can be done. Adding the following code in between receiving an ATM packet and forwarding the packet to the bank results in proper operation:
-\begin{lstlisting}
-printf( "Sleeping for 29 seconds.\n" );
-sleep( 29 );
-\end{lstlisting}
-An example is below.
-\\
-\includegraphics[scale=0.5]{slowLogin.png}
-\\
-
-\section{Account Enumeration Via Transfer}
-\$0 transfers can be used to verify whether or not a given user has an account at the bank. For example, Alice tries to send \$0 to Eve (which succeeds) and Vriska (which fails), showing that Eve has an account, but Vriska does not. In the image, Alice verifies that Bob is a valid user (as the transfer succeeds) and that Vriska is not a valid user, as the transfer fails.
-\\
-\includegraphics[scale=0.5]{transferUser.png}
-\\
-
-\section{Dysfunctional Card Verification}
-The actual contents of a card file are ignored. The only verification done on the card is if it has anything in it. That is, any card put into the machine will satisfy it, as long as it doesn't have a blank "magnetic strip" (i.e., contents). This is a massive security flaw, as it is a failure of two-factor security. The only protection that ATMs have are PINs, which only have $10^6$ options.
-
-\section{Poor Scaling}
-While not an issue with the current scale of the project, all account information is stored in a vector. With O(n) lookups, this will become incredibly slow with very large amounts of users.
-
-\section{Crashing the Bank}
-Adding a single line of code to the proxy will crash the bank. The bank cannot handle a malformed handshake message. The follow section of code in the proxy:
-\begin{lstlisting}
-while(1)
-{
-	//read the packet from the ATM
-    // [...]
-	
-	// Crashes bank
-    strcpy( packet, "" );
-    
-	//forward packet to bank
-    // [...]
-	
-	//get response packet from bank
-    // [...]
-	
-	// Crashes ATM
-	strcpy( packet, "" );
-	
-	//forward packet to ATM
-    // [...]
-}
-\end{lstlisting}
-can be easily manipulated to crash the bank (or, similarly, the ATMs, as detailed slightly later). Adding the line of code before forwarding the packet to the bank crashes the bank as soon as an ATM user attempts to log in. 
-\\
-\includegraphics[scale=0.5]{crashBank.png}
-\\
-Similarly, ATMs can be crashed by adding the line of code before forwarding the packet to the ATM.
-\\
-\includegraphics[scale=0.5]{crashATM.png}
-\\
-If both lines are left in, the bank crashes with a core dump, and the ATM crashes with no error message. This issue is due to not checking the validity of initial handshake messages. When it receives a blank message, it still tries to proceed with setting up a secure connection. The cryptographic functions crash, and the ATM and/or bank crash with them.
-
-\section{RNG Flaws}
-
-Their random number generator when asked for 32 bytes of data outputs 32
-random hex bytes. This means that each byte only has 16 ($2^{4}$) possibilities instead
-of 256 ($2^{8}$).
-
-The end result is that everything generated using these functions (AES keys, nonces, etc.) only
-have 128 bits of randomness instead of the expected 256 bits of randomness.
-
-\begin{lstlisting}
-std::string getRandom(int length)
-{
-     std::string retStr = "";
-     CryptoPP::AutoSeededRandomPool rng;
-     int random;
-     int num = 0;
-     bool hex = true;
-
-     for(unsigned int i = 0; i < length; ++i)
-     {
-         random = (int) rng.GenerateByte();
-         if(hex)
-         {
-             // Generate Random Hex String
-             num = (int) (random % 16);
-             if(num < 10)
-             {
-                 retStr += (num + '0');
-             }
-             else
-             {
-                 retStr += ((num - 10) + 'A');
-             }
-         }
-         else
-         {
-             // Generate Random String With ASCII Range (48, 126)
-             num = (int) (random % (126 - 48));
-             retStr += (num + '0');
-         }
-     }
-
-     return retStr;
-}
-\end{lstlisting}
-
-\section{Login Info}
-
-The login info is sent in cleartext inside of the encrypted packet.
-By login info we mean the card number and pin.
-The PIN is compared to the pin on the server. There is no hashing
-of the login information.
-The card number is not used.
-
-\section{Handshake Hijacking}
+\subsection{Handshake Hijacking}
 
 When the bank and ATM establish a handshake the ATM sends the bank a 
 nonce encrypted with the banks rsa key. Then the bank sends back an
@@ -253,20 +279,5 @@ the output of the system's random number generator. This makes pretending to be 
 This is incredible useful due to the plethora of exploits available. You can 
 make the ATM give out infinite money, and you can read everyone's card numbers 
 and PINs since they are sent over the network unhashed.
-
-\section{Key Management}
-
-Their binary does not have keys hardcoded into it. Rather they must be put in a special folder. This has two issues. First it is much easier to make a copy of their keys
-Second it allows for on the fly key manipulation. If you have access to the directory controlling the keys, you can change the keys and since the program loads them from disk each time it tries to use them you can change them at runtime.
-
-\section{Bank Deposit Limits}
-Due to the incorrect way atm limits are implemented, completely on the server side and globally, the bank is limited to depositing 1000\$ into any account. It cannot make multiple 1000\$ deposits.
-
-\section{Server Side Verification}
-On the server side no verification is done that the received numbers are integers.
-\begin{lstlisting}
-    float b = (float)atof(info.at(4).c_str());
-\end{lstlisting}
-Thus if you can impersonate an atm you can send arbitrary floats to the server. Combined with the float exploits described elsewhere you can generate infinite money.
 
 \end{document}
