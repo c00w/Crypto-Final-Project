@@ -254,6 +254,15 @@ This is incredible useful due to the plethora of exploits available. You can
 make the ATM give out infinite money, and you can read everyone's card numbers 
 and PINs since they are sent over the network unhashed.
 
+
+\section{Bank Deposits Floats}
+
+The bank allows users to deposit floats. The ATM only allows for withdrawal of integer amounts. If you deposit into the bank an amount of at least 7 decimal places (i.e. .9999999)
+when you check the users balance it will register as \$1. The user is then allowed to withdraw a dollars worth from the atm.
+
+Although this allows for theft of a very small fraction of a penny each time it is still an exploit. On a large enough scale it would allow for generation of a fair amount of money.
+
+
 \section{Key Management}
 
 Their binary does not have keys hardcoded into it. Rather they must be put in a special folder. This has two issues. First it is much easier to make a copy of their keys
