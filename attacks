@@ -38,7 +38,7 @@ Nonce is not 256 bit. Its in hex bitches. Thus much weaker[addressed, colin]
 
 Incorrect HMAC
 Just a straight up fucking hash
-Put inside of encryption layer
+Put inside of encryption layer [addressed, Colin]
 
 Proxy fucking crashes atm [addressed, Sam]
 Crash Banks [addressed, Sam]
