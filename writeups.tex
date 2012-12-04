@@ -1,6 +1,20 @@
-/********\
-|* Race Conditions
-\********/
+\documentclass{article}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{amsmath, amsthm, amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\begin{document}
+
+\title{Cryptographic Analysis}
+\author{Colin Rice}
+\author{Sam Milito}
+\author{Jacob Shedd}
+
+\maketitle
+
+
+\section{Race Conditions}
 
 The code as-is provides no protections on money, i.e., there are no mutex locks. For example, the withdrawl function:
 bool processWithdraw (std::vector<std::string> info)
@@ -45,9 +59,7 @@ If the timing works out correctly, a user will pass all required checks (the hig
 
 With a user logged on to multiple ATMs, they can abuse the race conditions to withdraw or transfer double their account balance.
 
-/********\
-|* Invalid Transfers
-\********/
+\section{Invalid Transfers}
 A transfer to an invalid user succeeds initially, as the checks are done out of order, namely the highlighted lines:
 bool processTransfer (std::vector<std::string> info)
 {
@@ -72,12 +84,10 @@ bool processTransfer (std::vector<std::string> info)
 	}
 	return false;
 }
-The active user has their account debited before the targetted user has their account credited. The result is that issuing a transfer to an invalid user will result in the active ATM user losing money, which then vanishes entirely from the system. In the image, Bob has $40 vanish when he attempts to transfer it to Vriska, a nonexistant user.
+The active user has their account debited before the targetted user has their account credited. The result is that issuing a transfer to an invalid user will result in the active ATM user losing money, which then vanishes entirely from the system. In the image, Bob has \$40 vanish when he attempts to transfer it to Vriska, a nonexistant user.
 [transferLoss.png]
 
-/********\
-|* Overly Generous Timeouts
-\********/
+\section{Overly Generous Timeouts}
 The timeout checking on both sides is overly generous. The ATM has a 30 second window
 if(time(NULL) - messageTimeout < 30) // Bank Response needs to be in less that 30 seconds.
 {
@@ -90,27 +100,19 @@ sleep( 29 );
 Increasing the sleep to 30 seconds results in a timeout.
 [overslept.png]
 
-/********\
-|* Account Enumeration Via Transfer
-\********/
+\section{Account Enumeration Via Transfer}
 $0 transfers can be used to verify whether or not a given user has an account at the bank. For example, Alice tries to send $0 to Eve (which succeeds) and Vriska (which fails), showing that Eve has an account, but Vriska does not. In the image, Alice verifies that Bob is a valid user (as the transfer succeeds) and that Vriska is not a valid user, as the transfer fails.
 [transferUser.png]
 {demonstration}
 
-/********\
-|* Dysfunctional Card Verification
-\********/
+\section{Dysfunctional Card Verification}
 The actual contents of a card file are ignored. The only verification done on the card is if it has anything in it. That is, any card put into the machine will satisfy it, as long as it doesn't have a blank "magnetic strip" (i.e., contents). This is a massive security flaw, as it is a failure of two-factor security. The only protection that ATMs have are PINs, which only have 10^6 options.
 {demonstration}
 
-/********\
-|* Poor Scaling
-\********/
+\section{Poor Scaling}
 While not an issue with the current scale of the project, all account information is stored in a vector. With O(n) lookups, this will become incredibly slow with very large amounts of users.
 
-/********\
-|* Crashing the Bank
-\********/
+\section{Crashing the Bank}
 Adding a single line of code to the proxy will crash the bank. The bank cannot handle a malformed handshake message. The follow section of code in the proxy:
 while(1)
 {
@@ -141,9 +143,7 @@ If both lines are left in, the bank crashes with a core dump, and the ATM crashe
 This issue is due to not checking the validity of initial handshake messages. When it receives a blank message, it still tries to proceed with setting up a secure connection. The cryptographic functions crash, and the ATM and/or bank crash with them.
 {demonstration}
 
-//////////////////////
-// bad random generator
-//////////////////////
+\section{RNG Flaws}
 
 Their random number generator when asked for 32 bytes of data, outputs 32
 random hex bytes. This means that each byte only has 16 possibilities instead
@@ -151,13 +151,13 @@ of 256.
 Thus everything they generate using these functions, AES Keys, nonces, etc..
 Only has 128 bits of randomness instead of 256 bits if they are reading back 256 bits.
 
-/////////////////////
-// Handshake faking
-////////////////////
+\section{Handshake Hijacking}
 
 When the bank and atm establish a handshake the atm sends the bank a 
 nonce encrypted with the banks rsa key. Then the bank send back an
 encryption key and the nonce, as well as its own generated nonce
+
+Note that there is no explicit authentication.
 
 Assuming you have the atm's public key it is possible to pretend to be a bank. You can simply send back a key encrypted with the atm's public key and the nonce.
 
@@ -175,4 +175,4 @@ and pins since they are sent over the network unhashed.
 
 
 
-
+\end{document}
