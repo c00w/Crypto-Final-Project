@@ -128,6 +128,7 @@ and the bank has no timeout handling at all. As such, packets can be held up to 
 printf( "Sleeping for 29 seconds.\n" );
 sleep( 29 );
 \end{lstlisting}
+An example is below.
 \\
 \includegraphics[scale=0.5]{slowLogin.png}
 \\
@@ -181,8 +182,8 @@ If both lines are left in, the bank crashes with a core dump, and the ATM crashe
 \section{RNG Flaws}
 
 Their random number generator when asked for 32 bytes of data outputs 32
-random hex bytes. This means that each byte only has 16 (2^{4}) possibilities instead
-of 256 (2^{8}).
+random hex bytes. This means that each byte only has 16 ($2^{4}$) possibilities instead
+of 256 ($2^{8}$).
 
 The end result is that everything generated using these functions (AES keys, nonces, etc.) only
 have 128 bits of randomness instead of the expected 256 bits of randomness.
