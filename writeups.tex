@@ -269,4 +269,8 @@ On the server side no verification is done that the received numbers are integer
 \end{lstlisting}
 Thus if you can impersonate an atm you can send arbitrary floats to the server. Combined with the float exploits described elsewhere you can generate infinite money.
 
+\section{No HMAC}
+They have no message verification protection.
+While they do hash the message they are sending they use a straight up SHA-512 hash.
+Thus if you can break the encryption it is trivial to modify a message since you can easily recompute the hash.
 \end{document}
