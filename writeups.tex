@@ -266,7 +266,17 @@ else
     cout << "ATM card not found.\n";
 }
 \end{lstlisting}
-This verifies that the card exists.
+This verifies that the card exists, and that is all. The card is eventually rolled into a packet (see below) then never used.
+
+\subsection{Permanent Lockout}
+If a user fails their login three times, they are permanently locked out at all ATMs forever. If a login fails due to incorrect PIN, it progresses towards a lockout:
+\begin{lstlisting}
+it->increase_login_attempts();
+if(it->get_login_attempts() >= 3) {
+	it->lock();
+}
+\end{lstlisting}
+Once an account gets locked, it's locked for all ATMs on a permanent basis. In the below picture, the lower ATM failed a login three times, and the one above it was unable to log in, even though it used the correct PIN.
 
 \subsection{Login Info}
 All login info is sent in cleartext inside the encrypted packet. The most 
