@@ -80,7 +80,7 @@ bool login (std::vector<std::string> info)
 	return false;
 }
 \end{lstlisting}
-If the timing works out correctly, a user will pass all required checks (the highlighted line), and then set_logged_in_true will be called. During this time, any other ATMs can then theoretically pass the same checks. The end result is that a single user would be logged on at multiple ATMs. Due to how fast all of the operations are (the data sets are miniscule), a demonstration was not feasible. This issue is exacerbated by the thirty second timeout window for packets (i.e., the bank accepts a packet if it's no more than 30 seconds old), as the proxy could hold packets, making sure that they are sent to the bank at identical times.
+If the timing works out correctly, a user will pass all required checks (the highlighted line), and then set\_logged\_in\_true will be called. During this time, any other ATMs can then theoretically pass the same checks. The end result is that a single user would be logged on at multiple ATMs. Due to how fast all of the operations are (the data sets are miniscule), a demonstration was not feasible. This issue is exacerbated by the thirty second timeout window for packets (i.e., the bank accepts a packet if it's no more than 30 seconds old), as the proxy could hold packets, making sure that they are sent to the bank at identical times.
 
 With a user logged on to multiple ATMs, they can abuse the race conditions to withdraw or transfer double their account balance.
 
@@ -126,8 +126,10 @@ if(time(NULL) - messageTimeout < 30) // Bank Response needs to be in less that 3
 }
 \end{lstlisting}
 and the bank has no timeout handling at all. As such, packets can be held up to 30 seconds before being sent to the ATM, and indefinitely before being sent to the bank. This opens it up to much longer analysis than otherwise. While there is no specific exploit I have in mind, this is a much larger window than is needed for packets to be sent and received. In the proxy, a large amount of work can be done. Adding the following code in between receiving an ATM packet and forwarding the packet to the bank results in proper operation:
+\begin{lstlisting}
 printf( "Sleeping for 29 seconds.\n" );
 sleep( 29 );
+\end{lstlisting}
 \includegraphics{slowLogin.png}
 
 \section{Account Enumeration Via Transfer}
@@ -135,7 +137,7 @@ $0 transfers can be used to verify whether or not a given user has an account at
 \includegraphics{transferUser.png}
 
 \section{Dysfunctional Card Verification}
-The actual contents of a card file are ignored. The only verification done on the card is if it has anything in it. That is, any card put into the machine will satisfy it, as long as it doesn't have a blank "magnetic strip" (i.e., contents). This is a massive security flaw, as it is a failure of two-factor security. The only protection that ATMs have are PINs, which only have 10^6 options.
+The actual contents of a card file are ignored. The only verification done on the card is if it has anything in it. That is, any card put into the machine will satisfy it, as long as it doesn't have a blank "magnetic strip" (i.e., contents). This is a massive security flaw, as it is a failure of two-factor security. The only protection that ATMs have are PINs, which only have $10^6$ options.
 
 \section{Poor Scaling}
 While not an issue with the current scale of the project, all account information is stored in a vector. With O(n) lookups, this will become incredibly slow with very large amounts of users.
