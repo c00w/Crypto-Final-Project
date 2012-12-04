@@ -7,7 +7,7 @@ They gave us their account keys [addressed, Colin]
 Threading
 Can withdraw multiple times. No locks on a per thread basis [addressed, Sam]
 
-Used floats for balance
+Used floats for balance [addressed, Jake]
 
 Transfers withdraw money if account doesn't exist [addressed, Sam]
 
@@ -26,7 +26,7 @@ Unsustainable for large numbers of users. O(N) lookups? Really? [addressed, Sam]
 
 No authentication on atm to bank handshake[addressed, colin]
 
-bank can deposit floats
+bank can deposit floats [addressed , Jake ]
 
 Can pretend to be bank
 Thus infinite money withdraws
@@ -38,7 +38,7 @@ Nonce is not 256 bit. Its in hex bitches. Thus much weaker[addressed, colin]
 
 Incorrect HMAC
 Just a straight up fucking hash
-Put inside of encryption layer
+Put inside of encryption layer [addressed, Colin]
 
 Proxy fucking crashes atm [addressed, Sam]
 Crash Banks [addressed, Sam]
