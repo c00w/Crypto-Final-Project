@@ -138,10 +138,37 @@ Similarly, ATMs can be crashed by adding the line of code before forwarding the 
 If both lines are left in, the bank crashes with a core dump, and the ATM crashes with no error message. This issue is due to not checking the validity of initial handshake messages. When it receives a blank message, it still tries to proceed with setting up a secure connection. The cryptographic functions crash, and the ATM and/or bank crash with them.
 {demonstration}
 
+//////////////////////
+// bad random generator
+//////////////////////
 
+Their random number generator when asked for 32 bytes of data, outputs 32
+random hex bytes. This means that each byte only has 16 possibilities instead
+of 256.
+Thus everything they generate using these functions, AES Keys, nonces, etc..
+Only has 128 bits of randomness instead of 256 bits if they are reading back 256 bits.
 
+/////////////////////
+// Handshake faking
+////////////////////
 
+When the bank and atm establish a handshake the atm sends the bank a 
+nonce encrypted with the banks rsa key. Then the bank send back an
+encryption key and the nonce, as well as its own generated nonce
 
+Assuming you have the atm's public key it is possible to pretend to be a bank. You can simply send back a key encrypted with the atm's public key and the nonce.
+
+Since there is no rsa authentication, or any other form of authentication,
+if you can guess the nonce you can pretend to be a bank. Normally this would
+take 2**256 attempts, but due to the aforementioned flaw in the RNG it only
+take 2**128 attempts. Even worse if you are starting an atm on an embedded
+system up on restart, the entropy will be low and it is possible to guess
+the output of the systems random number generator. Thus you can pretend
+to be the bank.
+
+This is super usefull due to the plethora of exploits available. You can 
+make the atm give out infinite money, you can read everyone's card numbers 
+and pins since they are sent over the network unhashed.
 
 
 
