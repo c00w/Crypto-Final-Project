@@ -72,6 +72,11 @@ Bank balances should always be integers; there is no reason to accept floats.
 Their binary does not have keys hardcoded into it. Rather they must be put in a special folder. This has two issues. First it is much easier to make a copy of their keys
 Second it allows for on the fly key manipulation. If you have access to the directory controlling the keys, you can change the keys and since the program loads them from disk each time it tries to use them you can change them at runtime.
 
+\subsection{No HMAC}
+They have no message verification protection.
+While they do hash the message they are sending they use a straight up SHA-512 hash.
+Thus if you can break the encryption it is trivial to modify a message since you can easily recompute the hash.
+
 \subsection{RNG Flaws}
 
 Their random number generator when asked for 32 bytes of data outputs 32
@@ -123,7 +128,18 @@ std::string getRandom(int length)
 As input verification is only done ATM-side, not server-side, masquerading as an ATM would allow the user to put in malformed requests, such as depositing 
 
 \section{Exploits}
-Thus if you can impersonate an atm you can send arbitrary floats to the server. Combined with the float exploits described elsewhere you can generate infinite money.
+
+\subsection{Bank Deposits Floats}
+
+The bank allows users to deposit floats. The ATM only allows for withdrawal of integer amounts. If you deposit into the bank an amount of at least 7 decimal places (i.e. .9999999)
+when you check the users balance it will register as \$1. The user is then allowed to withdraw a dollars worth from the atm.
+
+Although this allows for theft of a very small fraction of a penny each time it is still an exploit. On a large enough scale it would allow for generation of a fair amount of money.
+
+In the image below we also noted that after repitition of this process the balance will at one point show that it contains \$1 but not allow you to withdraw that dollar. This was then fixed by depositing a whole number which made the float agree with the balance display.
+\\
+\includegraphics[scale=0.5]{StrangeFloatBehavior.png}
+\\
 
 \subsection{Invalid Transfers}
 A transfer to an invalid user succeeds initially, as the checks are done out of order, namely the highlighted lines:
