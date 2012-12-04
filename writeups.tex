@@ -57,6 +57,8 @@ bool processWithdraw (std::vector<std::string> info)
 }
 \end{lstlisting}
 That is, a user logged on multiple times could theoretically withdraw double the amount in their account, assuming that the timing went through correctly. The only protection against this is not allowing users to log in on multiple machines at a time. However, the login function is also succeptible to a race condition.
+
+\begin{lstlisting}
 bool login (std::vector<std::string> info) 
 {
 	std::vector<Account>::iterator it;
@@ -77,12 +79,15 @@ bool login (std::vector<std::string> info)
 	}
 	return false;
 }
+\end{lstlisting}
 If the timing works out correctly, a user will pass all required checks (the highlighted line), and then set_logged_in_true will be called. During this time, any other ATMs can then theoretically pass the same checks. The end result is that a single user would be logged on at multiple ATMs. Due to how fast all of the operations are (the data sets are miniscule), a demonstration was not feasible. This issue is exacerbated by the thirty second timeout window for packets (i.e., the bank accepts a packet if it's no more than 30 seconds old), as the proxy could hold packets, making sure that they are sent to the bank at identical times.
 
 With a user logged on to multiple ATMs, they can abuse the race conditions to withdraw or transfer double their account balance.
 
 \section{Invalid Transfers}
 A transfer to an invalid user succeeds initially, as the checks are done out of order, namely the highlighted lines:
+
+\begin{lstlisting}
 bool processTransfer (std::vector<std::string> info)
 {
 	float b = (float)atof(info.at(4).c_str());
@@ -106,16 +111,19 @@ bool processTransfer (std::vector<std::string> info)
 	}
 	return false;
 }
+\end{lstlisting}
 The active user has their account debited before the targetted user has their account credited. The result is that issuing a transfer to an invalid user will result in the active ATM user losing money, which then vanishes entirely from the system. In the image, Bob has \$40 vanish when he attempts to transfer it to Vriska, a nonexistant user.
 \includegraphics{transferLoss.png}
 {demonstration}
 
 \section{Overly Generous Timeouts}
 The timeout checking on both sides is overly generous. The ATM has a 30 second window
+\begin{lstlisting}
 if(time(NULL) - messageTimeout < 30) // Bank Response needs to be in less that 30 seconds.
 {
     // [...]
 }
+\end{lstlisting}
 and the bank has no timeout handling at all. As such, packets can be held up to 30 seconds before being sent to the ATM, and indefinitely before being sent to the bank. This opens it up to much longer analysis than otherwise. While there is no specific exploit I have in mind, this is a much larger window than is needed for packets to be sent and received. In the proxy, a large amount of work can be done. Adding the following code in between receiving an ATM packet and forwarding the packet to the bank results in proper operation:
 printf( "Sleeping for 29 seconds.\n" );
 sleep( 29 );
@@ -135,6 +143,7 @@ While not an issue with the current scale of the project, all account informatio
 
 \section{Crashing the Bank}
 Adding a single line of code to the proxy will crash the bank. The bank cannot handle a malformed handshake message. The follow section of code in the proxy:
+\begin{lstlisting}
 while(1)
 {
 	//read the packet from the ATM
@@ -155,6 +164,7 @@ while(1)
 	//forward packet to ATM
     // [...]
 }
+\end{lstlisting}
 can be easily manipulated to crash the bank (or, similarly, the ATMs, as detailed slightly later). Adding the line of code before forwarding the packet to the bank crashes the bank as soon as an ATM user attempts to log in. 
 [crashBank.png]
 Similarly, ATMs can be crashed by adding the line of code before forwarding the packet to the ATM.
