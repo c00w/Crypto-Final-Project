@@ -7,9 +7,6 @@ They gave us their account keys [addressed, Colin]
 Threading
 Can withdraw multiple times. No locks on a per thread basis [addressed, Sam]
 
-Don't verify negatives on server, only client
-Don't verify balances non negative
-
 Used floats for balance
 
 Transfers withdraw money if account doesn't exist [addressed, Sam]
@@ -27,8 +24,6 @@ Can check if user exists from login screen with spoofed card. [doesn't actually 
 
 Unsustainable for large numbers of users. O(N) lookups? Really? [addressed, Sam]
 
-Shitty code quality, inconsistent tabbing, spacing.
-
 No authentication on atm to bank handshake[addressed, colin]
 
 bank can deposit floats
@@ -36,13 +31,10 @@ bank can deposit floats
 Can pretend to be bank
 Thus infinite money withdraws
 And thus send us card and pin
-Actually not.
-But can hang atm's like crazy with junky packets
+But can hang atm's like crazy with junky packets[addressed, sam]
 And if you can guess nonce, can steal PIN's [addressed, colin]
 
 Nonce is not 256 bit. Its in hex bitches. Thus much weaker[addressed, colin]
-
-Source repo is bad.
 
 Incorrect HMAC
 Just a straight up fucking hash
