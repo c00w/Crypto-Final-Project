@@ -77,6 +77,12 @@ In the following impage, repeated deposits of \$0.9999999 were followed by depos
 \includegraphics[scale=0.5]{StrangeFloatBehavior.png}
 \\
 
+\subsection{Single Line Login}
+\\
+\includegraphics[scale=0.5]{OneLineLogin.png}
+\\
+Because of the way the atm parses user input it is possible to have the user login and pin on the same line. This still allows the user to login but for anyone looking over their shoulder they would see the pin in cleartext.
+
 \subsection{Poor PIN Verification}
 PINs are supposed to be 6 characters, but any amount of zeros at the end are ignored. If a PIN is entered with less than the required characters, it pads it out with zeros:
 \begin{lstlisting}
