@@ -192,8 +192,8 @@ Assuming you have the atm's public key it is possible to pretend to be a bank. Y
 
 Since there is no rsa authentication, or any other form of authentication,
 if you can guess the nonce you can pretend to be a bank. Normally this would
-take 2**256 attempts, but due to the aforementioned flaw in the RNG it only
-take 2**128 attempts. Even worse if you are starting an atm on an embedded
+take $2^256$ attempts, but due to the aforementioned flaw in the RNG it only
+take $2^128$ attempts. Even worse if you are starting an atm on an embedded
 system up on restart, the entropy will be low and it is possible to guess
 the output of the systems random number generator. Thus you can pretend
 to be the bank.
