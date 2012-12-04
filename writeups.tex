@@ -270,5 +270,11 @@ Second it allows for on the fly key manipulation. If you have access to the dire
 
 \section{Bank Deposit Limits}
 Due to the incorrect way atm limits are implemented, completely on the server side and globally, the bank is limited to depositing 1000\$ into any account. It cannot make multiple 1000\$ deposits.
->>>>>>> a4998f5e0cdace82f78b4dce583dfc967abdefc9
+
+\section{Server Side Verification}
+On the server side no verification is done that the received numbers are integers.
+\begin{lstlisting}
+    float b = (float)atof(info.at(4).c_str());
+\end{lstlisting}
+Thus if you can impersonate an atm you can send arbitrary floats to the server. Combined with the float exploits described elsewhere you can generate infinite money.
 \end{document}
