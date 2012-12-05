@@ -37,7 +37,7 @@ escapeinside={\%*}{*)}          % if you want to add a comment within your code
 There are a number of issues that, while not exploits in and of themselves, either allow exploits, or are issues within the system.
 
 \subsection{Bank Deposit Limits}
-Due to the incorrect way atm limits are implemented, completely on the server side and globally, the bank is limited to depositing 1000\$ into any account. It cannot make multiple 1000\$ deposits.
+Due to the incorrect way atm limits are implemented, completely on the server side and globally, the bank is limited to depositing \$1000 into any account. It cannot make multiple \$1000 deposits.
 
 \subsection{Poor Scaling}
 While not an issue with the current scale of the project, all account information is stored in a vector. With O(n) lookups, this will become incredibly slow with very large amounts of users.
@@ -60,30 +60,6 @@ An example of adding the sleeps is below.
 \includegraphics[scale=0.85]{slowLogin.png}
 \\
 
-\subsection{Lack of Server Side Verification}
-On the server side, no verification is done that the received numbers are integers.
-\begin{lstlisting}
-    float b = (float)atof(info.at(4).c_str());
-\end{lstlisting}
-Bank balances should always be integers; there is no reason to accept floats.
-
-\subsection{Bank Deposits Floats}
-While the ATM only allows withdrawals of integer amounts, the bank allows for deposits of floats. There is no server side input verification other than making sure that it is a positive float. If there is a deposit at the bank with at least seven decimal places (e.g., 0.9999999), when the user checks their balance it will register as \$1 more than they previously had. They will then be able to withdraw the new amount, plus the dollar.
-
-While this isn't very exploitable (the user would need to sit down at a bank's computer and deposit \$0.9999999 multiple times), it shows that the bank allows for malformed inputs.
-
-In the following impage, repeated deposits of \$0.9999999 were followed by depositing a whole amount. This rolled it over, and allowed the user to withdraw the whole dollar amount.
-\\
-\includegraphics[scale=0.25]{StrangeFloatBehavior.png}
-\\
-
-\subsection{Single Line Login}
-Example
-\\
-\includegraphics[scale=0.65]{OneLineLogin.png}
-\\
-Because of the way the atm parses user input it is possible to have the user login and pin on the same line. This still allows the user to login but for anyone looking over their shoulder they would see the pin in cleartext.
-
 \subsection{Poor PIN Verification}
 PINs are supposed to be 6 characters, but any amount of zeros at the end are ignored. If a PIN is entered with less than the required characters, it pads it out with zeros:
 \begin{lstlisting}
@@ -96,6 +72,30 @@ while(pin.length() < 6)
 pin = toNumbers(pin);
 \end{lstlisting}
 For example, a PIN of 678900 will accept 6789, 67890, or 678900.
+
+\subsection{Lack of Server Side Verification}
+On the server side, no verification is done that the received numbers are integers.
+\begin{lstlisting}
+    float b = (float)atof(info.at(4).c_str());
+\end{lstlisting}
+Bank balances should always be integers; there is no reason to accept floats.
+
+\subsection{Single Line Login}
+Example
+\\
+\includegraphics[scale=0.65]{OneLineLogin.png}
+\\
+Because of the way the atm parses user input it is possible to have the user login and pin on the same line. This still allows the user to login but for anyone looking over their shoulder they would see the pin in cleartext.
+
+\subsection{Bank Deposits Floats}
+While the ATM only allows withdrawals of integer amounts, the bank allows for deposits of floats. There is no server side input verification other than making sure that it is a positive float. If there is a deposit at the bank with at least seven decimal places (e.g., 0.9999999), when the user checks their balance it will register as \$1 more than they previously had. They will then be able to withdraw the new amount, plus the dollar.
+
+While this isn't very exploitable (the user would need to sit down at a bank's computer and deposit \$0.9999999 multiple times), it shows that the bank allows for malformed inputs.
+
+In the following impage, repeated deposits of \$0.9999999 were followed by depositing a whole amount. This rolled it over, and allowed the user to withdraw the whole dollar amount.
+\\
+\includegraphics[scale=0.65]{StrangeFloatBehavior.png}
+\\
 
 \subsection{Key Management}
 The binaries do not have hardcoded keys. Instead of being cooked into the binaries, they read the keys from a special folder. This has two consequences. First, it makes it far easier to get copies of the keys. Second, it allows for on-the-fly key manipulation--if an attacker has access to the directory controlling the keys, they can be changed at runtime.
