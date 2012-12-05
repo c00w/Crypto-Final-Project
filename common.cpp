@@ -142,9 +142,9 @@ bool compileHashedMessage( std::string plain, std::string key, std::string& comp
     timeval currentTime;
     gettimeofday( &currentTime, NULL );
     double timeNow  = currentTime.tv_sec + ( currentTime.tv_usec / 1000000.0 );
-
-    if( applyHMAC( plain, key, hash ) ) return 1;
     time.assign( std::to_string(timeNow) );
+
+    if(applyHMAC( plain + time, key, hash ) ) return 1;
 
     compiled.assign(hash);
     compiled.append("|");
@@ -170,7 +170,7 @@ bool extractData( std::string fullMessage, std::string stringKey, std::string& d
     message.assign( fullMessage.substr( pipeLocs[1] + 1, subLengths[2] ) );
 
     // Verify the integrity
-    if( !validHMAC( hash, stringKey, message ) ) return 1;
+    if( !validHMAC( hash, stringKey, message+time ) ) return 1;
     
     // Verify that the timestamp is reasonable.
     timeval currentTime;
