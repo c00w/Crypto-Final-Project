@@ -42,24 +42,6 @@ Due to the incorrect way atm limits are implemented, completely on the server si
 \subsection{Poor Scaling}
 While not an issue with the current scale of the project, all account information is stored in a vector. With O(n) lookups, this will become incredibly slow with very large amounts of users.
 
-\subsection{Overly Generous Timeouts}
-The timeout checking on both sides is overly generous. The ATM has a 30 second window
-\begin{lstlisting}
-if(time(NULL) - messageTimeout < 30) // Bank Response needs to be in less that 30 seconds.
-{
-    // [...]
-}
-\end{lstlisting}
-and the bank has no timeout handling at all. As such, packets can be held up to 30 seconds before being sent to the ATM, and indefinitely before being sent to the bank. This opens it up to much longer analysis than otherwise. While there is no specific exploit I have in mind, this is a much larger window than is needed for packets to be sent and received. In the proxy, a large amount of work can be done. Adding the following code in between receiving an ATM packet and forwarding the packet to the bank results in proper operation:
-\begin{lstlisting}
-printf( "Sleeping for 29 seconds.\n" );
-sleep( 29 );
-\end{lstlisting}
-An example of adding the sleeps is below.
-\\
-\includegraphics[scale=0.85]{slowLogin.png}
-\\
-
 \subsection{Poor PIN Verification}
 PINs are supposed to be 6 characters, but any amount of zeros at the end are ignored. If a PIN is entered with less than the required characters, it pads it out with zeros:
 \begin{lstlisting}
@@ -380,7 +362,7 @@ bool login (std::vector<std::string> info)
 	return false;
 }
 \end{lstlisting}
-If the timing works out correctly, a user will pass all required checks (the highlighted line), and then set\_logged\_in\_true will be called. During this time, any other ATMs can then theoretically pass the same checks. The end result is that a single user would be logged on at multiple ATMs. Due to how fast all of the operations are (the data sets are miniscule), a demonstration was not feasible. This issue is exacerbated by the thirty second timeout window for packets (i.e., the bank accepts a packet if it's no more than 30 seconds old), as the proxy could hold packets, making sure that they are sent to the bank at identical times.
+If the timing works out correctly, a user will pass all required checks (the highlighted line), and then set\_logged\_in\_true will be called. During this time, any other ATMs can then theoretically pass the same checks. The end result is that a single user would be logged on at multiple ATMs. Due to how fast all of the operations are (the data sets are miniscule), a demonstration was not feasible. 
 
 With a user logged on to multiple ATMs, they can abuse the race conditions to withdraw or transfer double their account balance.
 
