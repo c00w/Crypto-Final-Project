@@ -57,7 +57,7 @@ sleep( 29 );
 \end{lstlisting}
 An example of adding the sleeps is below.
 \\
-\includegraphics[scale=0.5]{slowLogin.png}
+\includegraphics[scale=0.85]{slowLogin.png}
 \\
 
 \subsection{Lack of Server Side Verification}
@@ -79,7 +79,7 @@ In the following impage, repeated deposits of \$0.9999999 were followed by depos
 
 \subsection{Single Line Login}
 \\
-\includegraphics[scale=0.5]{OneLineLogin.png}
+\includegraphics[scale=0.65]{OneLineLogin.png}
 \\
 Because of the way the atm parses user input it is possible to have the user login and pin on the same line. This still allows the user to login but for anyone looking over their shoulder they would see the pin in cleartext.
 
@@ -215,13 +215,13 @@ bool processTransfer (std::vector<std::string> info)
 \end{lstlisting}
 The active user has their account debited before the targetted user has their account credited. The result is that issuing a transfer to an invalid user will result in the active ATM user losing money, which then vanishes entirely from the system. In the image, Bob has \$40 vanish when he attempts to transfer it to Vriska, a nonexistant user.
 \\
-\includegraphics[scale=0.5]{transferLoss.png}
+\includegraphics[scale=0.85]{transferLoss.png}
 \\
 
 \subsection{Account Enumeration Via Transfer}
 \$0 transfers can be used to verify whether or not a given user has an account at the bank. For example, Alice tries to send \$0 to Eve (which succeeds) and Vriska (which fails), showing that Eve has an account, but Vriska does not. In the image, Alice verifies that Bob is a valid user (as the transfer succeeds) and that Vriska is not a valid user, as the transfer fails.
 \\
-\includegraphics[scale=0.5]{transferUser.png}
+\includegraphics[scale=0.85]{transferUser.png}
 \\
 
 \subsection{Dysfunctional Card Verification}
@@ -336,11 +336,11 @@ while(1)
 \end{lstlisting}
 can be easily manipulated to crash the bank (or, similarly, the ATMs, as detailed slightly later). Adding the line of code before forwarding the packet to the bank crashes the bank as soon as an ATM user attempts to log in. 
 \\
-\includegraphics[scale=0.5]{crashBank.png}
+\includegraphics[scale=0.85]{crashBank.png}
 \\
 Similarly, ATMs can be crashed by adding the line of code before forwarding the packet to the ATM.
 \\
-\includegraphics[scale=0.5]{crashATM.png}
+\includegraphics[scale=0.85]{crashATM.png}
 \\
 If both lines are left in, the bank crashes with a core dump, and the ATM crashes with no error message. This issue is due to not checking the validity of initial handshake messages. When it receives a blank message, it still tries to proceed with setting up a secure connection. The cryptographic functions crash, and the ATM and/or bank crash with them.
 
